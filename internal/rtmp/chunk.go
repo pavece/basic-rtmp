@@ -7,22 +7,10 @@ import (
 )
 
 
-type Chunk struct {
-	BasicHeader BasicHeaderData
-	Header Type0HeaderData
-	Data []byte
-}
-
-var chunkStreams = make(map[int]Chunk)
-
-
 func ReadChunkData(connection net.Conn){
 	basicHeaderData := ParseBasicHeader(connection)
 	messageHeaderData := ParseMessageHeader(connection, basicHeaderData.Fmt)
 	type0header, ok := messageHeaderData.(Type0HeaderData)
-
-	fmt.Println(basicHeaderData)
-	fmt.Println(messageHeaderData)
 
 	if ok {
 		//First chunk of chunk stream
@@ -47,6 +35,15 @@ func ReadChunkData(connection net.Conn){
 	if len(currentChunkStream.Data) >= int(currentChunkStream.Header.MessageLength) {
 		//Full message on board
 		fmt.Println(currentChunkStream)
+
+		handler, ok := ControlHandlers[int(currentChunkStream.Header.MessageTypeId)]
+		if !ok {
+			log.Fatal("Handler not implemented")
+		}
+
+		handler(currentChunkStream)
+
+		delete(chunkStreams, basicHeaderData.ChunkStreamId)
 	}
 }
 

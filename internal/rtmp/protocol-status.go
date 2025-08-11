@@ -6,3 +6,11 @@ type ProtocolStatus struct {
 }
 
 var protocolStatus = ProtocolStatus{chunkSize: 128, baseTimestamp: 0}
+
+type Chunk struct {
+	BasicHeader BasicHeaderData
+	Header      Type0HeaderData
+	Data        []byte
+}
+
+var chunkStreams = make(map[int]Chunk)
