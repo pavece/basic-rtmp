@@ -30,9 +30,7 @@ func main() {
 func handleConnection(connection net.Conn){
 	defer connection.Close()
 
-	hsData := rtmp.Handshake(connection)
-	rtmp.ParseBasicHeader(connection)
-
-	fmt.Println(hsData)
-
+	// rtmp.Handshake(connection)
+	basicHeaderData := rtmp.ParseBasicHeader(connection)
+	rtmp.ParseMessageHeader(connection, basicHeaderData.Fmt)
 }
