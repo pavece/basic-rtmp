@@ -2,7 +2,6 @@ package rtmp
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -56,7 +55,6 @@ func ParseBasicHeader(connection net.Conn) BasicHeaderData {
 
 	headerData.ChunkStreamId = csIdValue
 
-	fmt.Println(headerData)
 	return headerData
 }
 
@@ -77,17 +75,14 @@ func ParseMessageHeader(connection net.Conn, headerType int) interface{} {
 	case 0:
 		headerData := parseType0Header(messageHeader)
 		headerData.Timestamp = parseExtendedTimestamp(connection, headerData.Timestamp)
-		fmt.Println(headerData)
 		return headerData
 	case 1:
 		headerData := parseType1Header(messageHeader)
 		headerData.TimestampDelta = parseExtendedTimestamp(connection, headerData.TimestampDelta)
-		fmt.Println(headerData)
 		return headerData
 	case 2:
 		headerData := parseType2Header(messageHeader)
 		headerData.TimestampDelta = parseExtendedTimestamp(connection, headerData.TimestampDelta)
-		fmt.Println(headerData)
 		return headerData
 	case 3:
 		break

@@ -1,6 +1,7 @@
 package rtmp
 
 import (
+	"encoding/binary"
 	"io"
 	"log"
 	"math/rand/v2"
@@ -51,6 +52,7 @@ func Handshake(connection net.Conn) HandshakeData {
 
 	copy(handshakeData.InitialTimestamp[:], c1[0:4])
 
+	protocolStatus.baseTimestamp = binary.BigEndian.Uint32(c1[0:4])
 	connection.Write(s2)
 
 	if _, err := io.ReadFull(connection, c2[:]); err != nil {
