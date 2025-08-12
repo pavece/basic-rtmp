@@ -35,4 +35,5 @@ func handleConnection(connection net.Conn){
 	for {
 		rtmp.ReadChunkData(connection)
 	}
+
 }
