@@ -18,10 +18,19 @@ func ReadChunkData(connection net.Conn){
 	}
 
 	currentChunkStream, ok := chunkStreams[basicHeaderData.ChunkStreamId]
-	
+
 	if !ok {
 		log.Fatal("Chunk stream not found")
 	}
+
+	if basicHeaderData.Fmt == 1 {
+		type1header := messageHeaderData.(Type1HeaderData)
+		currentChunkStream.Header.Timestamp += type1header.TimestampDelta
+		currentChunkStream.Header.MessageTypeId = type1header.MessageTypeId
+		currentChunkStream.Header.MessageLength = type1header.MessageLength
+	}
+
+	currentChunkStream.BasicHeader = basicHeaderData
 
 	bufferSize := min(max(int(currentChunkStream.Header.MessageLength) - len(currentChunkStream.Data), 0), int(protocolStatus.chunkSize))
 
@@ -41,9 +50,10 @@ func ReadChunkData(connection net.Conn){
 			log.Fatal("Handler not implemented")
 		}
 
-		handler(currentChunkStream)
+		handler(currentChunkStream, connection)
 
-		delete(chunkStreams, basicHeaderData.ChunkStreamId)
+		currentChunkStream.Data = []byte{}
+		chunkStreams[basicHeaderData.ChunkStreamId] = currentChunkStream
 	}
 }
 

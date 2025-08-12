@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 
 	"github.com/yutopp/go-amf0"
 )
 
 // Protocol control message handling
-var ControlHandlers = map[int]func(Chunk){
+var ControlHandlers = map[int]func(Chunk, net.Conn){
 	1: setChunkSize,
 	2: abortMessage,
 	3: notImplemented, //Ack
@@ -24,23 +25,23 @@ var ControlHandlers = map[int]func(Chunk){
 	20: parseAMF0Command,
 }
 
-func setChunkSize(chunk Chunk) {
+func setChunkSize(chunk Chunk, connection net.Conn) {
 	newSize := binary.BigEndian.Uint32(chunk.Data)
 	protocolStatus.chunkSize = newSize
 	fmt.Println("Updated chunk size to ", newSize)
 }
 
-func abortMessage(chunk Chunk) {
+func abortMessage(chunk Chunk, connection net.Conn) {
 	streamId := binary.BigEndian.Uint32(chunk.Data)
 	delete(chunkStreams, int(streamId))
 	fmt.Println("Aborted message stream ", streamId)
 }
 
-func userControl(chunk Chunk){
+func userControl(chunk Chunk, connection net.Conn){
 	fmt.Println("User control message")
 }
 
-func parseAMF0Command(chunk Chunk) {
+func parseAMF0Command(chunk Chunk, connection net.Conn) {
 	fmt.Println("AMF0 data")
 
 	reader := bytes.NewReader(chunk.Data)
@@ -60,8 +61,13 @@ func parseAMF0Command(chunk Chunk) {
 
 		fmt.Println(decoded0)
 	}
+
+	sendWindowAckSize(connection, 4096)
+	sendPeerBandwidth(connection, 4096, 0)
+	sendStreamBeginCommand(connection, 1)
+	sendConnectionResultCommand(connection, 1)
 }
 
-func notImplemented(chunk Chunk){
+func notImplemented(chunk Chunk, connection net.Conn){
 	fmt.Println("Not implemented")
 }
