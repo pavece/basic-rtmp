@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"io"
-	"log"
 	"net"
 
 	"github.com/yutopp/go-amf0"
@@ -15,12 +13,12 @@ import (
 var ControlHandlers = map[int]func(Chunk, net.Conn){
 	1: setChunkSize,
 	2: abortMessage,
-	3: notImplemented, //Ack
+	3: ack, 
 	4: userControl,
-	5: notImplemented, //Window Acknowledgement Size
+	5: windowAckSize,
 	6: notImplemented, //Set Peer Bandwidth
-	7: notImplemented, //Audio data
-	8: notImplemented, //Video data
+	8: getAudio, 
+	9: getVideo, 
 	18: notImplemented, //AMF0 encoded metadata
 	20: parseAMF0Command,
 }
@@ -33,39 +31,49 @@ func setChunkSize(chunk Chunk, connection net.Conn) {
 
 func abortMessage(chunk Chunk, connection net.Conn) {
 	streamId := binary.BigEndian.Uint32(chunk.Data)
-	delete(chunkStreams, int(streamId))
+	delete(chunkStreams, int(streamId)) //TODO: incorrect
 	fmt.Println("Aborted message stream ", streamId)
+}
+
+func ack(chunk Chunk, connection net.Conn){
+	totalBytes := binary.BigEndian.Uint32(chunk.Data)
+	fmt.Println("Recieved ACK from client, total bytes: ", totalBytes)
 }
 
 func userControl(chunk Chunk, connection net.Conn){
 	fmt.Println("User control message")
 }
 
-func parseAMF0Command(chunk Chunk, connection net.Conn) {
-	fmt.Println("AMF0 data")
+func windowAckSize(chunk Chunk, connection net.Conn){
+	window := binary.BigEndian.Uint32(chunk.Data)
+	protocolStatus.clientWindowAck = window
+	fmt.Println("Updated client's ack window to ", window)
+}
 
+func getAudio(chunk Chunk, connection net.Conn){
+	fmt.Println("Audio chunk")
+}
+
+func getVideo(chunk Chunk, connection net.Conn){
+	fmt.Println("Video chunk")
+}
+
+func parseAMF0Command(chunk Chunk, connection net.Conn) {
 	reader := bytes.NewReader(chunk.Data)
 	decoder := amf0.NewDecoder(reader)
 
-	for {
-		var decoded0 interface{}
-		err := decoder.Decode(&decoded0)
+	command := ""
+	decoder.Decode(&command)
 
-		if err == io.EOF {
-			break;
-		}
+	handler, ok := commandHandlers[command]
 
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Println(decoded0)
+	if !ok {
+		fmt.Println("Command handler not implemented for command ", command)
+		return
 	}
 
-	sendWindowAckSize(connection, 4096)
-	sendPeerBandwidth(connection, 4096, 0)
-	sendStreamBeginCommand(connection, 1)
-	sendConnectionResultCommand(connection, 1)
+	fmt.Println("Incoming command: ", command)
+	handler(chunk, connection)
 }
 
 func notImplemented(chunk Chunk, connection net.Conn){

@@ -47,7 +47,8 @@ func ReadChunkData(connection net.Conn){
 
 		handler, ok := ControlHandlers[int(currentChunkStream.Header.MessageTypeId)]
 		if !ok {
-			log.Fatal("Handler not implemented")
+			fmt.Println("Handler not implemented")
+			return
 		}
 
 		handler(currentChunkStream, connection)
