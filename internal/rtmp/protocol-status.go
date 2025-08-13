@@ -1,5 +1,9 @@
 package rtmp
 
+import (
+	"os/exec"
+)
+
 type ProtocolStatus struct {
 	chunkSize       uint32
 	baseTimestamp   uint32
@@ -16,3 +20,11 @@ type Chunk struct {
 }
 
 var chunkStreams = make(map[int]Chunk)
+
+var FfmpegCommand = exec.Command("ffmpeg",
+    "-i", "pipe:0",
+    "-c:v", "copy",
+    "-c:a", "copy",
+    "output.mp4",
+)
+var FfmpegPipe, _ = FfmpegCommand.StdinPipe()

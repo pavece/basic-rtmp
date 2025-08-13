@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"net"
 
 	"github.com/yutopp/go-amf0"
@@ -52,10 +53,21 @@ func windowAckSize(chunk Chunk, connection net.Conn){
 
 func getAudio(chunk Chunk, connection net.Conn){
 	fmt.Println("Audio chunk")
+    err := writeFLVTag(FfmpegPipe, 8, chunk.Header.Timestamp, chunk.Data)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func getVideo(chunk Chunk, connection net.Conn){
 	fmt.Println("Video chunk")
+    err := writeFLVTag(FfmpegPipe, 9, chunk.Header.Timestamp, chunk.Data)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func parseAMF0Command(chunk Chunk, connection net.Conn) {

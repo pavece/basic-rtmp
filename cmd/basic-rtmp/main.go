@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
+	"os"
 
 	"github.com/pavece/simple-rtmp/internal/rtmp"
 )
@@ -31,9 +33,18 @@ func handleConnection(connection net.Conn){
 	defer connection.Close()
 
 	rtmp.Handshake(connection)
+	rtmp.FfmpegCommand.Stderr = os.Stderr
+	rtmp.FfmpegCommand.Stdout = os.Stdout
 
+	rtmp.WriteFLVHeader(rtmp.FfmpegPipe)
+
+	err := rtmp.FfmpegCommand.Start()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	
 	for {
 		rtmp.ReadChunkData(connection)
 	}
-
 }

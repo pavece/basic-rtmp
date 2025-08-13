@@ -37,8 +37,8 @@ func connect(chunk Chunk, connection net.Conn){
 		fmt.Println(decoded0)
 	}
 	
-	sendWindowAckSize(connection, 4096)
-	sendPeerBandwidth(connection, 4096, 0)
+	sendWindowAckSize(connection, 10000000)
+	sendPeerBandwidth(connection, 10000000, 0)
 	sendStreamBeginCommand(connection, 1)
 	sendConnectionResultCommand(connection, 1)
 }
