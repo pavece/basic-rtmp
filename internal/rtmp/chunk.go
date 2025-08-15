@@ -43,7 +43,7 @@ func ReadChunkData(connection net.Conn){
 
 	if len(currentChunkStream.Data) >= int(currentChunkStream.Header.MessageLength) {
 		//Full message on board
-		fmt.Println(currentChunkStream)
+		// fmt.Println(currentChunkStream)
 
 		handler, ok := ControlHandlers[int(currentChunkStream.Header.MessageTypeId)]
 		if !ok {

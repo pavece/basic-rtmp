@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"net"
 
 	"github.com/yutopp/go-amf0"
@@ -52,21 +51,25 @@ func windowAckSize(chunk Chunk, connection net.Conn){
 }
 
 func getAudio(chunk Chunk, connection net.Conn){
-	fmt.Println("Audio chunk")
-    err := writeFLVTag(FfmpegPipe, 8, chunk.Header.Timestamp, chunk.Data)
+	// fmt.Println("Audio chunk", chunk.Header.Timestamp)
+	FlvWriter.AddChunk(MediaChunk{Type: 8, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})
+    
+	// err := writeFLVTag(FfmpegPipe, 8, chunk.Header.Timestamp, chunk.Data)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 }
 
 func getVideo(chunk Chunk, connection net.Conn){
-	fmt.Println("Video chunk")
-    err := writeFLVTag(FfmpegPipe, 9, chunk.Header.Timestamp, chunk.Data)
+	// fmt.Println("Video chunk", chunk.Header.Timestamp)
+	FlvWriter.AddChunk(MediaChunk{Type: 9, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})
+	
+	// err := writeFLVTag(FfmpegPipe, 9, chunk.Header.Timestamp, chunk.Data)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 }
 

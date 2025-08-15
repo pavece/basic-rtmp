@@ -22,9 +22,13 @@ type Chunk struct {
 var chunkStreams = make(map[int]Chunk)
 
 var FfmpegCommand = exec.Command("ffmpeg",
-    "-i", "pipe:0",
-    "-c:v", "copy",
-    "-c:a", "copy",
-    "output.mp4",
+    "-i", "pipe:0",   
+    "-c:v", "copy",   
+    "-c:a", "copy",   
+    // "-f", "flv",      
+    "output.mp4",     
 )
+
 var FfmpegPipe, _ = FfmpegCommand.StdinPipe()
+
+var FlvWriter = NewFLVWriter(FfmpegPipe, 500) //TODO: Improve placement

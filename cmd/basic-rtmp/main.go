@@ -36,10 +36,8 @@ func handleConnection(connection net.Conn){
 	rtmp.FfmpegCommand.Stderr = os.Stderr
 	rtmp.FfmpegCommand.Stdout = os.Stdout
 
-	rtmp.WriteFLVHeader(rtmp.FfmpegPipe)
-
 	err := rtmp.FfmpegCommand.Start()
-
+	
 	if err != nil {
 		log.Fatal(err)
 	}
