@@ -1,9 +1,12 @@
 package rtmp
 
 import (
-	"os/exec"
+	"github.com/pavece/simple-rtmp/internal/flv"
+	"github.com/pavece/simple-rtmp/internal/transcoding"
 )
 
+
+//TODO: All this should go into a connection independent DS to allow multiple streams (This is just for tesing)
 type ProtocolStatus struct {
 	chunkSize       uint32
 	baseTimestamp   uint32
@@ -21,14 +24,5 @@ type Chunk struct {
 
 var chunkStreams = make(map[int]Chunk)
 
-var FfmpegCommand = exec.Command("ffmpeg",
-    "-i", "pipe:0",   
-    "-c:v", "copy",   
-    "-c:a", "copy",   
-    // "-f", "flv",      
-    "output.mp4",     
-)
-
-var FfmpegPipe, _ = FfmpegCommand.StdinPipe()
-
-var FlvWriter = NewFLVWriter(FfmpegPipe, 500) //TODO: Improve placement
+var _, FfmpegPipe, _ = transcoding.SetupTranscoder() //TODO: Transcoder should be set up on createStream
+var FlvWriter = flv.NewFLVWriter(FfmpegPipe, 500) 

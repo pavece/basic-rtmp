@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/pavece/simple-rtmp/internal/flv"
 	"github.com/yutopp/go-amf0"
 )
 
@@ -51,26 +52,11 @@ func windowAckSize(chunk Chunk, connection net.Conn){
 }
 
 func getAudio(chunk Chunk, connection net.Conn){
-	// fmt.Println("Audio chunk", chunk.Header.Timestamp)
-	FlvWriter.AddChunk(MediaChunk{Type: 8, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})
-    
-	// err := writeFLVTag(FfmpegPipe, 8, chunk.Header.Timestamp, chunk.Data)
-
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	FlvWriter.AddChunk(flv.MediaChunk{Type: 8, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})    
 }
 
 func getVideo(chunk Chunk, connection net.Conn){
-	// fmt.Println("Video chunk", chunk.Header.Timestamp)
-	FlvWriter.AddChunk(MediaChunk{Type: 9, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})
-	
-	// err := writeFLVTag(FfmpegPipe, 9, chunk.Header.Timestamp, chunk.Data)
-
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
+	FlvWriter.AddChunk(flv.MediaChunk{Type: 9, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})
 }
 
 func parseAMF0Command(chunk Chunk, connection net.Conn) {

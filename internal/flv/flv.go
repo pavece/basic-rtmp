@@ -1,4 +1,4 @@
-package rtmp
+package flv
 
 import (
 	"encoding/binary"
