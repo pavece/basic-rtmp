@@ -6,6 +6,7 @@ import (
 
 
 type ProtocolStatus struct {
+	StreamClosed 	bool
 	chunkSize       uint32
 	baseTimestamp   uint32
 	clientWindowAck uint32
@@ -22,5 +23,5 @@ type Chunk struct {
 }
 
 func NewProtocolStatus() *ProtocolStatus{
-	return &ProtocolStatus{chunkSize: 128, baseTimestamp: 0, clientWindowAck: 0, serverWindowAck: 0, chunkStreams: make(map[int]Chunk), flvWriter: nil}
+	return &ProtocolStatus{chunkSize: 128, baseTimestamp: 0, clientWindowAck: 0, serverWindowAck: 0, chunkStreams: make(map[int]Chunk), flvWriter: nil, StreamClosed: false}
 }

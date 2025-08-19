@@ -17,7 +17,7 @@ func SetupTranscoder() (*exec.Cmd, io.WriteCloser, error){
 	)
 
 	ffmpegCommand.Stderr = os.Stderr
-	ffmpegCommand.Stdout = os.Stdout
+	// ffmpegCommand.Stdout = os.Stdout
 
 	ffmpegPipe, err := ffmpegCommand.StdinPipe()
 	if err != nil {
