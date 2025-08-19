@@ -7,17 +7,17 @@ import (
 )
 
 
-func ReadChunkData(connection net.Conn){
+func ReadChunkData(connection net.Conn, protocolStatus *ProtocolStatus){
 	basicHeaderData := ParseBasicHeader(connection)
 	messageHeaderData := ParseMessageHeader(connection, basicHeaderData.Fmt)
 	type0header, ok := messageHeaderData.(Type0HeaderData)
 
 	if ok {
 		//First chunk of chunk stream
-		chunkStreams[basicHeaderData.ChunkStreamId] = Chunk{Header: type0header, BasicHeader: basicHeaderData}
+		protocolStatus.chunkStreams[basicHeaderData.ChunkStreamId] = Chunk{Header: type0header, BasicHeader: basicHeaderData}
 	}
 
-	currentChunkStream, ok := chunkStreams[basicHeaderData.ChunkStreamId]
+	currentChunkStream, ok := protocolStatus.chunkStreams[basicHeaderData.ChunkStreamId]
 
 	if !ok {
 		log.Fatal("Chunk stream not found")
@@ -39,22 +39,20 @@ func ReadChunkData(connection net.Conn){
 	
 	currentChunkStream.Data = append(currentChunkStream.Data, chunkData...)
 	
-	chunkStreams[basicHeaderData.ChunkStreamId] = currentChunkStream
+	protocolStatus.chunkStreams[basicHeaderData.ChunkStreamId] = currentChunkStream
 
 	if len(currentChunkStream.Data) >= int(currentChunkStream.Header.MessageLength) {
 		//Full message on board
-		// fmt.Println(currentChunkStream)
-
 		handler, ok := ControlHandlers[int(currentChunkStream.Header.MessageTypeId)]
 		if !ok {
 			fmt.Println("Handler not implemented")
 			return
 		}
 
-		handler(currentChunkStream, connection)
+		handler(currentChunkStream, protocolStatus, connection)
 
 		currentChunkStream.Data = []byte{}
-		chunkStreams[basicHeaderData.ChunkStreamId] = currentChunkStream
+		protocolStatus.chunkStreams[basicHeaderData.ChunkStreamId] = currentChunkStream
 	}
 }
 

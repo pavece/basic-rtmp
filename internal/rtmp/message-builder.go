@@ -102,7 +102,7 @@ func prepend(data, prefix []byte) []byte {
 }
 
 //TODO: Add extended timestamp generation
-func buildMessageChunks(body []byte, chunkStreamId uint32, messageTypeId uint8, messageStreamId uint32)[][]byte {
+func buildMessageChunks(body []byte, chunkStreamId uint32, messageTypeId uint8, messageStreamId uint32, protocolStatus *ProtocolStatus)[][]byte {
 	chunkSize := int(protocolStatus.chunkSize)
 	bodyLen := len(body)
 

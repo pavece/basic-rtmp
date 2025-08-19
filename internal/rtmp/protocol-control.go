@@ -11,7 +11,7 @@ import (
 )
 
 // Protocol control message handling
-var ControlHandlers = map[int]func(Chunk, net.Conn){
+var ControlHandlers = map[int]func(Chunk, *ProtocolStatus, net.Conn){
 	1: setChunkSize,
 	2: abortMessage,
 	3: ack, 
@@ -24,42 +24,42 @@ var ControlHandlers = map[int]func(Chunk, net.Conn){
 	20: parseAMF0Command,
 }
 
-func setChunkSize(chunk Chunk, connection net.Conn) {
+func setChunkSize(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
 	newSize := binary.BigEndian.Uint32(chunk.Data)
 	protocolStatus.chunkSize = newSize
 	fmt.Println("Updated chunk size to ", newSize)
 }
 
-func abortMessage(chunk Chunk, connection net.Conn) {
+func abortMessage(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
 	streamId := binary.BigEndian.Uint32(chunk.Data)
-	delete(chunkStreams, int(streamId)) //TODO: incorrect
+	delete(protocolStatus.chunkStreams, int(streamId)) //TODO: incorrect
 	fmt.Println("Aborted message stream ", streamId)
 }
 
-func ack(chunk Chunk, connection net.Conn){
+func ack(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 	totalBytes := binary.BigEndian.Uint32(chunk.Data)
 	fmt.Println("Recieved ACK from client, total bytes: ", totalBytes)
 }
 
-func userControl(chunk Chunk, connection net.Conn){
+func userControl(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 	fmt.Println("User control message")
 }
 
-func windowAckSize(chunk Chunk, connection net.Conn){
+func windowAckSize(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 	window := binary.BigEndian.Uint32(chunk.Data)
 	protocolStatus.clientWindowAck = window
 	fmt.Println("Updated client's ack window to ", window)
 }
 
-func getAudio(chunk Chunk, connection net.Conn){
-	FlvWriter.AddChunk(flv.MediaChunk{Type: 8, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})    
+func getAudio(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+	protocolStatus.flvWriter.AddChunk(flv.MediaChunk{Type: 8, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})    
 }
 
-func getVideo(chunk Chunk, connection net.Conn){
-	FlvWriter.AddChunk(flv.MediaChunk{Type: 9, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})
+func getVideo(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+	protocolStatus.flvWriter.AddChunk(flv.MediaChunk{Type: 9, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})
 }
 
-func parseAMF0Command(chunk Chunk, connection net.Conn) {
+func parseAMF0Command(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
 	reader := bytes.NewReader(chunk.Data)
 	decoder := amf0.NewDecoder(reader)
 
@@ -74,9 +74,9 @@ func parseAMF0Command(chunk Chunk, connection net.Conn) {
 	}
 
 	fmt.Println("Incoming command: ", command)
-	handler(chunk, connection)
+	handler(chunk, protocolStatus, connection)
 }
 
-func notImplemented(chunk Chunk, connection net.Conn){
+func notImplemented(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 	fmt.Println("Not implemented")
 }
