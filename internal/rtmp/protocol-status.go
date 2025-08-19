@@ -12,6 +12,7 @@ type ProtocolStatus struct {
 	serverWindowAck uint32
 	chunkStreams map[int]Chunk
 	flvWriter *flv.FLVWriter
+	mediaMetadata map[string]int
 }
 
 type Chunk struct {

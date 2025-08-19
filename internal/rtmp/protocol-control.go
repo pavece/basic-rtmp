@@ -10,7 +10,9 @@ import (
 	"github.com/yutopp/go-amf0"
 )
 
-// Protocol control message handling
+/*
+	Generic protocol message handlers
+*/
 var ControlHandlers = map[int]func(Chunk, *ProtocolStatus, net.Conn){
 	1: setChunkSize,
 	2: abortMessage,
@@ -20,7 +22,7 @@ var ControlHandlers = map[int]func(Chunk, *ProtocolStatus, net.Conn){
 	6: notImplemented, //Set Peer Bandwidth
 	8: getAudio, 
 	9: getVideo, 
-	18: notImplemented, //AMF0 encoded metadata
+	18: getMetadata,
 	20: parseAMF0Command,
 }
 
@@ -58,6 +60,21 @@ func getAudio(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 func getVideo(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 	protocolStatus.flvWriter.AddChunk(flv.MediaChunk{Type: 9, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})
 }
+
+func getMetadata(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
+	reader := bytes.NewReader(chunk.Data)
+	decoder := amf0.NewDecoder(reader)
+
+	command := ""
+	decoder.Decode(&command)
+	decoder.Decode(&command)
+
+	var metadata map[string]int
+	decoder.Decode(&metadata)
+
+	protocolStatus.mediaMetadata = metadata
+}
+
 
 func parseAMF0Command(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
 	reader := bytes.NewReader(chunk.Data)

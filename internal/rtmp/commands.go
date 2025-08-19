@@ -12,6 +12,12 @@ import (
 	"github.com/yutopp/go-amf0"
 )
 
+/*
+	AMF0 command handling for media streams
+*/
+const WINDOW_SIZE_BYTE = 8192
+const MEDIA_BUFFER_SIZE_MS = 500
+
 var commandHandlers = map[string]func(Chunk, *ProtocolStatus,  net.Conn){
 	"connect": connect,
 	"createStream": createStream,
@@ -35,13 +41,11 @@ func connect(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		fmt.Println(decoded0)
 	}
 	
-	sendWindowAckSize(connection, 10000000, protocolStatus)
-	sendPeerBandwidth(connection, 10000000, 0, protocolStatus)
-	sendStreamBeginCommand(connection, 1, protocolStatus)
+	sendWindowAckSize(connection, WINDOW_SIZE_BYTE, protocolStatus)
+	sendPeerBandwidth(connection, WINDOW_SIZE_BYTE, 0, protocolStatus)
+	sendStreamBeginCommand(connection, 1, protocolStatus) //TODO: Implement correct streamId handling
 	sendConnectionResultCommand(connection, 1, protocolStatus)
 }
 
@@ -53,7 +57,7 @@ func createStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Co
 
 	//TODO: This should go inside onMetadata and get metadata properties directly
 	_, FfmpegPipe, _ := transcoding.SetupTranscoder() 
-	protocolStatus.flvWriter = flv.NewFLVWriter(FfmpegPipe, 500) 
+	protocolStatus.flvWriter = flv.NewFLVWriter(FfmpegPipe, MEDIA_BUFFER_SIZE_MS) 
 
 	for {
 		var decoded0 interface{}
@@ -66,8 +70,6 @@ func createStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Co
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		fmt.Println(decoded0)
 	}
 
 	sendCreateStreamResultCommand(connection, 4, 1, protocolStatus)
@@ -88,8 +90,6 @@ func publish(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		fmt.Println(decoded0)
 	}
 
 	sendStreamBeginCommand(connection, 1, protocolStatus)
