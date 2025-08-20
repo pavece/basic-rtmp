@@ -23,11 +23,8 @@ func Handshake(conn net.Conn) error {
     if _, err := io.ReadFull(conn, c0[:]); err != nil {
        log.Fatal(err)
     }
-    if _, err := io.ReadFull(conn, c1[:]); err != nil {
-       log.Fatal(err)
-    }
-
-    s0[0] = 3
+    
+    s0[0] = 3 //Version
     copy(s1[:4], []byte{0,0,0,0})
     copy(s1[4:8], []byte{0,0,0,0}) 
     if _, err := io.ReadFull(rand.Reader, s1[8:]); err != nil {
@@ -40,12 +37,16 @@ func Handshake(conn net.Conn) error {
        log.Fatal(err)
     }
 
-    if _, err := io.ReadFull(conn, c2[:]); err != nil {
+    if _, err := io.ReadFull(conn, c1[:]); err != nil {
        log.Fatal(err)
     }
 
-    copy(s2[:], c1[:])
+   copy(s2[:], c1[:])
     if _, err := conn.Write(s2[:]); err != nil {
+       log.Fatal(err)
+    }
+
+    if _, err := io.ReadFull(conn, c2[:]); err != nil {
        log.Fatal(err)
     }
 
