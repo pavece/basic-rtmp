@@ -1,6 +1,8 @@
 package rtmp
 
 import (
+	"io"
+
 	"github.com/pavece/simple-rtmp/internal/flv"
 )
 
@@ -13,7 +15,9 @@ type ProtocolStatus struct {
 	serverWindowAck uint32
 	chunkStreams map[int]Chunk
 	flvWriter *flv.FLVWriter
+	ffmpegPipe io.WriteCloser
 	mediaMetadata map[string]int
+
 }
 
 type Chunk struct {

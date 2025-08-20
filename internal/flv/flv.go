@@ -164,6 +164,6 @@ func (f *FLVWriter) writeFLVTag(tagType byte, dts uint32, payload []byte) error 
 	return binary.Write(f.w, binary.BigEndian, prevSize)
 }
 
-func (f *FLVWriter) Close() error {
+func (f *FLVWriter) Close() error {	
 	return f.FlushAll()
 }

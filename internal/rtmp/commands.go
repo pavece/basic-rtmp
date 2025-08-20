@@ -31,9 +31,9 @@ func connect(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 }
 
 func createStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
-	_, FfmpegPipe, _ := transcoding.SetupTranscoder() 
-	protocolStatus.flvWriter = flv.NewFLVWriter(FfmpegPipe, MEDIA_BUFFER_SIZE_MS) 
-
+	_, ffmpegPipe, _ := transcoding.SetupTranscoder() 
+	protocolStatus.flvWriter = flv.NewFLVWriter(ffmpegPipe, MEDIA_BUFFER_SIZE_MS) 
+	protocolStatus.ffmpegPipe = ffmpegPipe
 	sendCreateStreamResultCommand(connection, 4, 1, protocolStatus)
 }
 
@@ -44,6 +44,8 @@ func publish(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 
 func deleteStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 	//TODO: Perform any cleanup related to global stream data
+	protocolStatus.flvWriter.Close()
+	protocolStatus.ffmpegPipe.Close()
 	protocolStatus.StreamClosed = true
 }
 
