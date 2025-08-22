@@ -1,11 +1,14 @@
 package rtmp
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 
 	"github.com/pavece/simple-rtmp/internal/flv"
+	"github.com/pavece/simple-rtmp/internal/streams"
 	"github.com/pavece/simple-rtmp/internal/transcoding"
+	"github.com/yutopp/go-amf0"
 )
 
 /*
@@ -24,10 +27,21 @@ var commandHandlers = map[string]func(Chunk, *ProtocolStatus,  net.Conn){
 
 
 func connect(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+	reader := bytes.NewReader(chunk.Data)
+	decoder := amf0.NewDecoder(reader)
+	
+	var connectProps map[string]string
+	
+	decoder.Decode(&connectProps)
+	decoder.Decode(&connectProps)
+	decoder.Decode(&connectProps)
+
+	protocolStatus.streamProps = streams.CreateNewStream(connectProps["tcUrl"])
+
 	sendWindowAckSize(connection, WINDOW_SIZE_BYTE, protocolStatus)
 	sendPeerBandwidth(connection, WINDOW_SIZE_BYTE, 0, protocolStatus)
-	sendStreamBeginCommand(connection, 1, protocolStatus) //TODO: Implement correct streamId handling
-	sendConnectionResultCommand(connection, 1, protocolStatus)
+	sendStreamBeginCommand(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)
+	sendConnectionResultCommand(connection, protocolStatus.streamProps.StreamId, protocolStatus)
 }
 
 func createStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
@@ -38,14 +52,29 @@ func createStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Co
 }
 
 func publish(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
-	sendStreamBeginCommand(connection, 1, protocolStatus)
-	sendPublishStart(connection, 1, protocolStatus)
+	reader := bytes.NewReader(chunk.Data)
+	decoder := amf0.NewDecoder(reader)
+	
+	streamKey := ""
+	decoder.Decode(&streamKey)
+	decoder.Decode(&streamKey)
+	decoder.Decode(&streamKey)
+	decoder.Decode(&streamKey)
+
+	err := streams.ValidateStreamKey(streamKey)
+	if err != nil {
+		deleteStream(Chunk{}, protocolStatus, connection)
+		connection.Close()
+	}
+
+	sendStreamBeginCommand(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)
+	sendPublishStart(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)
 }
 
 func deleteStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
-	//TODO: Perform any cleanup related to global stream data
 	protocolStatus.flvWriter.Close()
 	protocolStatus.ffmpegPipe.Close()
+	streams.RemoveStream(protocolStatus.streamProps)
 	protocolStatus.StreamClosed = true
 }
 

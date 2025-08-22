@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/pavece/simple-rtmp/internal/flv"
+	"github.com/pavece/simple-rtmp/internal/streams"
 )
 
 
@@ -17,7 +18,7 @@ type ProtocolStatus struct {
 	flvWriter *flv.FLVWriter
 	ffmpegPipe io.WriteCloser
 	mediaMetadata map[string]int
-
+	streamProps streams.StreamProps
 }
 
 type Chunk struct {
