@@ -45,7 +45,7 @@ func connect(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 }
 
 func createStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
-	_, ffmpegPipe, _ := transcoding.SetupTranscoder() 
+	_, ffmpegPipe, _ := transcoding.SetupTranscoder(protocolStatus.mediaMetadata) 
 	protocolStatus.flvWriter = flv.NewFLVWriter(ffmpegPipe, MEDIA_BUFFER_SIZE_MS) 
 	protocolStatus.ffmpegPipe = ffmpegPipe
 	sendCreateStreamResultCommand(connection, 4, 1, protocolStatus)

@@ -36,6 +36,4 @@ func handleConnection(connection net.Conn){
 	for !protocolStatus.StreamClosed {
 		rtmp.ReadChunkData(connection, protocolStatus)
 	}
-
-	fmt.Println("Closing connection...")
 }
