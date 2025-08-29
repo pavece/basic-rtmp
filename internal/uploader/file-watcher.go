@@ -2,6 +2,7 @@ package uploader
 
 import (
 	"log"
+	"os"
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
@@ -9,6 +10,12 @@ import (
 
 //Watch for new .ts / .m3u8 in the media directories to opload them to the object store / CDN
 func SetupFileWatcher(){
+
+    _, err := os.Stat("./media")
+    if os.IsNotExist(err) {
+        os.Mkdir("./media", 0777)
+    }
+
 
 	watcher, err := fsnotify.NewWatcher()
     if err != nil {
@@ -35,4 +42,7 @@ func SetupFileWatcher(){
     }()
 
     err = watcher.Add("./media")
+    if err != nil {
+        log.Fatal("Failed to attach file watcher to media folder", err)
+    }
 }

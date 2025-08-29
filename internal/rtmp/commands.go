@@ -67,6 +67,13 @@ func publish(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 		connection.Close()
 	}
 
+	mediaId, err := streams.GenerateMediaId(streamKey)
+	if err != nil {
+		deleteStream(Chunk{}, protocolStatus, connection)
+		connection.Close()
+	}
+	
+	protocolStatus.streamProps.MediaId = mediaId
 	sendStreamBeginCommand(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)
 	sendPublishStart(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)
 }

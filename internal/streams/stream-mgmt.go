@@ -1,6 +1,7 @@
 package streams
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 )
@@ -8,6 +9,7 @@ import (
 type StreamProps struct {
 	StreamPath string
 	StreamId int
+	MediaId string
 }
 
 var streams []StreamProps
@@ -41,4 +43,13 @@ func RemoveStream(stream StreamProps){
 		}
 	}
 	streamsLock.Unlock()
+	onStramEnd(stream)
+}
+
+
+/* 
+	Use this to mark streams as completed or run custom logic related to stream ends
+*/
+func onStramEnd(stream StreamProps){
+	fmt.Printf("Stream with id %d and media id %s has ended \n", stream.StreamId, stream.MediaId)
 }
