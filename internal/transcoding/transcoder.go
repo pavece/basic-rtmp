@@ -18,9 +18,10 @@ func SetupTranscoder(mediaMetadata map[string]int) (*exec.Cmd, io.WriteCloser, e
         "-c:a", "aac",
         "-f", "hls",
         "-hls_time", "2",
-        "-hls_list_size", "15",
-        "-hls_flags", "delete_segments",
-        "-hls_segment_filename", "./media/segment_%d.ts",
+        "-hls_list_size", "4",
+        "-hls_flags", "append_list+delete_segments",
+        "-hls_base_url", os.Getenv("S3_ENDPOINT") + "/" + os.Getenv("CDN_BUCKET_NAME") + "/", //TODO: Add media id
+        "-hls_segment_filename", "./media/segment-%d.ts",
         "./media/master.m3u8",
     )
 
@@ -31,13 +32,11 @@ func SetupTranscoder(mediaMetadata map[string]int) (*exec.Cmd, io.WriteCloser, e
         return nil, nil, err
     }
 
-
     err = ffmpegCommand.Start()
     if err != nil {
         return nil, nil, err
     }
 
 	uploader.SetupFileWatcher()
-
     return ffmpegCommand, ffmpegPipe, nil
 }
