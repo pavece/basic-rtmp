@@ -2,7 +2,6 @@ package uploader
 
 import (
 	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -11,13 +10,8 @@ import (
 
 //TODO: add segments to the DVR playlist
 //Watch for new .ts / .m3u8 in the media directories to opload them to the object store / CDN
-func SetupFileWatcher() {
-    mediaDir := "./media"
-
-    _, err := os.Stat("./media")
-    if os.IsNotExist(err) {
-        os.Mkdir("./media", 0777)
-    }
+func SetupFileWatcher(streamMediaID string) {
+    mediaDir := "./media/" + streamMediaID
 
     watcher, err := fsnotify.NewWatcher()
     if err != nil {
@@ -33,11 +27,11 @@ func SetupFileWatcher() {
                 }
 
                 if event.Op & fsnotify.Create == fsnotify.Create &&  (strings.HasSuffix(event.Name, ".ts") || strings.HasSuffix(event.Name, ".m3u8")){
-                    log.Printf("File detected: %s\n", event.Name)
-
                     go func(filePath string) {
                         time.Sleep(1 * time.Second)
-                        destName := strings.Split(filePath, "\\")[1]
+                        splitFileName := strings.Split(filePath, "\\")
+                        destName := streamMediaID + "/" +splitFileName[len(splitFileName) - 1]
+            
 
                         if err := FileUploaderInstance.UploadFile(filePath, destName); err != nil {
                             log.Printf("Failed to upload %s: %v\n", filePath, err)

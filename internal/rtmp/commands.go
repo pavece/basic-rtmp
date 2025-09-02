@@ -45,9 +45,6 @@ func connect(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 }
 
 func createStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
-	_, ffmpegPipe, _ := transcoding.SetupTranscoder(protocolStatus.mediaMetadata) 
-	protocolStatus.flvWriter = flv.NewFLVWriter(ffmpegPipe, MEDIA_BUFFER_SIZE_MS) 
-	protocolStatus.ffmpegPipe = ffmpegPipe
 	sendCreateStreamResultCommand(connection, 4, 1, protocolStatus)
 }
 
@@ -72,8 +69,12 @@ func publish(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 		deleteStream(Chunk{}, protocolStatus, connection)
 		connection.Close()
 	}
-	
-	protocolStatus.streamProps.MediaId = mediaId
+
+	_, ffmpegPipe, _ := transcoding.SetupTranscoder(protocolStatus.mediaMetadata, mediaId) 
+	protocolStatus.flvWriter = flv.NewFLVWriter(ffmpegPipe, MEDIA_BUFFER_SIZE_MS) 
+	protocolStatus.ffmpegPipe = ffmpegPipe
+
+	protocolStatus.streamProps.MediaId = mediaId	
 	sendStreamBeginCommand(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)
 	sendPublishStart(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)
 }
