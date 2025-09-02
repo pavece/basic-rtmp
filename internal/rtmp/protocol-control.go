@@ -54,11 +54,11 @@ func windowAckSize(chunk Chunk, protocolStatus *ProtocolStatus, connection net.C
 }
 
 func getAudio(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
-	protocolStatus.flvWriter.AddChunk(flv.MediaChunk{Type: 8, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})    
+	protocolStatus.flvWriter.AddChunk(flv.MediaChunk{Type: 8, Timestamp: chunk.Header.Timestamp - protocolStatus.baseTimestamp, Payload: chunk.Data})    
 }
 
 func getVideo(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
-	protocolStatus.flvWriter.AddChunk(flv.MediaChunk{Type: 9, Timestamp: chunk.Header.Timestamp, Payload: chunk.Data})
+	protocolStatus.flvWriter.AddChunk(flv.MediaChunk{Type: 9, Timestamp: chunk.Header.Timestamp - protocolStatus.baseTimestamp, Payload: chunk.Data})
 }
 
 func getMetadata(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
