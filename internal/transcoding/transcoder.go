@@ -6,9 +6,18 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/pavece/simple-rtmp/internal/uploader"
 )
+
+type Rendition struct {
+    bitrate int
+    height int
+    width int
+}
+
+var renditions []Rendition = []Rendition{{bitrate: 1000, height: 480, width: 854}, {bitrate: 5000, height: 720, width: 1280}/*, {bitrate: 8000, height: 1080, width: 1920} */}
 
 func createMediaFolder(mediaId string){
     _, err := os.Stat("./media")
@@ -23,44 +32,68 @@ func createMediaFolder(mediaId string){
 }
 
 func validateMediaMetadata(mediaMetadata map[string]int) {
-    //TODO: Validate metadata
-    fmt.Println(mediaMetadata)
+    if mediaMetadata["height"] < 480 || mediaMetadata["width"] < 854 {
+        log.Fatal("Video must be of at least 480p vres, ending stream") //TODO: Gracefully end stream
+    }
 }
 
-func setupRenditionFilters(mediaMetadata map[string]int) []string {
-    return []string{}
+func setupRenditionFilters(height int) ([]string, string) {
+    lastRenditionIndex := 0;
+    for i, rendition := range renditions {
+        if rendition.height >= height {
+            lastRenditionIndex = i
+        }
+    }
+
+    options := make([]string, 0)
+
+    //General complex filter definition line
+    options = append(options, "-filter_complex")
+    filtersDefinition := ""
+    namingStreamMap := ""
+
+    for i := 0; i<lastRenditionIndex+1; i++{
+        filtersDefinition += fmt.Sprintf("[0:v]scale=%d:%d[v%d];", renditions[i].width, renditions[i].width, i)
+        namingStreamMap += fmt.Sprintf("v:%d,a:%d,name:%dp", i, i, renditions[i].height)
+    }
+    
+    options = append(options, filtersDefinition)
+
+    //Definition for each filter
+    for i := 0; i<lastRenditionIndex+1; i++{
+        splitParams := strings.Split(fmt.Sprintf("-map [v%d] -map 0:a:0 -c:v:%d libx264 -b:v:%d %dk -c:a:%d aac", i, i, i, renditions[i].bitrate, i), " ")
+        options = append(options, splitParams...)
+    }
+
+    
+
+
+    return options, namingStreamMap
 }
 
 
 func SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, io.WriteCloser, error) {
-    createMediaFolder(mediaId)
     validateMediaMetadata(mediaMetadata)
-    // setupRenditionFilters(mediaMetadata)
+    createMediaFolder(mediaId)
 
-    ffmpegCommand := exec.Command("ffmpeg",
+    ffmpegRenditionOptions, namingStreamMap := setupRenditionFilters(mediaMetadata["height"])
+
+    args := []string{
         "-i", "pipe:0",
-
-        "-filter_complex", "[0:v]scale=854:480[v0];[0:v]scale=1280:720[v1];[0:v]scale=1920:1080[v2]",
-
-        "-map", "[v0]", "-map", "0:a:0",
-        "-c:v:0", "libx264", "-b:v:0", "800k", "-c:a:0", "aac",
-
-        "-map", "[v1]", "-map", "0:a:0",
-        "-c:v:1", "libx264", "-b:v:1", "2500k", "-c:a:1", "aac",
-
-        "-map", "[v2]", "-map", "0:a:0",
-        "-c:v:2", "libx264", "-b:v:2", "5000k", "-c:a:2", "aac",
-
-        "-f", "hls",
+    }
+    args = append(args, ffmpegRenditionOptions...)
+    args = append(args, "-f", "hls",
         "-hls_time", "2",
         "-hls_list_size", "4",
         "-hls_flags", "append_list+delete_segments",
         "-hls_base_url", os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+mediaId+"/",
         "-hls_segment_filename", "./media/"+mediaId+"/%v-segment-%d.ts",
-        "-var_stream_map", "v:0,a:0,name:480p v:1,a:1,name:720p v:2,a:2,name:1080p",
+        "-var_stream_map", namingStreamMap,
         "-master_pl_name", "master.m3u8",
         "./media/"+mediaId+"/%v.m3u8",
     )
+
+    ffmpegCommand := exec.Command("ffmpeg", args...)
 
     ffmpegCommand.Stderr = os.Stderr
 
