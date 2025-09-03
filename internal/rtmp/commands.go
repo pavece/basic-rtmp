@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/pavece/simple-rtmp/internal/flv"
 	"github.com/pavece/simple-rtmp/internal/streams"
-	"github.com/pavece/simple-rtmp/internal/transcoding"
 	"github.com/yutopp/go-amf0"
 )
 
@@ -69,11 +67,7 @@ func publish(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 		deleteStream(Chunk{}, protocolStatus, connection)
 		connection.Close()
 	}
-
-	_, ffmpegPipe, _ := transcoding.SetupTranscoder(protocolStatus.mediaMetadata, mediaId) 
-	protocolStatus.flvWriter = flv.NewFLVWriter(ffmpegPipe, MEDIA_BUFFER_SIZE_MS) 
-	protocolStatus.ffmpegPipe = ffmpegPipe
-
+	
 	protocolStatus.streamProps.MediaId = mediaId	
 	sendStreamBeginCommand(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)
 	sendPublishStart(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)

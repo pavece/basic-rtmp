@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"github.com/pavece/simple-rtmp/internal/flv"
+	"github.com/pavece/simple-rtmp/internal/transcoding"
 	"github.com/yutopp/go-amf0"
 )
 
@@ -71,10 +72,12 @@ func getMetadata(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Con
 
 	var metadata map[string]int
 	decoder.Decode(&metadata)
-
 	protocolStatus.mediaMetadata = metadata
-}
 
+	_, ffmpegPipe, _ := transcoding.SetupTranscoder(protocolStatus.mediaMetadata, protocolStatus.streamProps.MediaId) 
+	protocolStatus.flvWriter = flv.NewFLVWriter(ffmpegPipe, MEDIA_BUFFER_SIZE_MS) 
+	protocolStatus.ffmpegPipe = ffmpegPipe
+}
 
 func parseAMF0Command(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
 	reader := bytes.NewReader(chunk.Data)
