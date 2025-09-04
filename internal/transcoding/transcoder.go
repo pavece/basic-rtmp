@@ -1,6 +1,7 @@
 package transcoding
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -17,7 +18,7 @@ type Rendition struct {
     width int
 }
 
-var renditions []Rendition = []Rendition{{bitrate: 1000, height: 480, width: 854}, {bitrate: 5000, height: 720, width: 1280}/*, {bitrate: 8000, height: 1080, width: 1920} */}
+var renditions []Rendition = []Rendition{{bitrate: 1000, height: 480, width: 852}, {bitrate: 5000, height: 720, width: 1280}/*, {bitrate: 8000, height: 1080, width: 1920} */}
 
 func createMediaFolder(mediaId string){
     _, err := os.Stat("./media")
@@ -31,10 +32,11 @@ func createMediaFolder(mediaId string){
     }
 }
 
-func validateMediaMetadata(mediaMetadata map[string]int) {
-    if mediaMetadata["height"] < 480 || mediaMetadata["width"] < 854 {
-        log.Fatal("Video must be of at least 480p vres, ending stream") //TODO: Gracefully end stream
+func validateMediaMetadata(mediaMetadata map[string]int) error {
+    if mediaMetadata["height"] < 480 || mediaMetadata["width"] < 852 {
+        return errors.New("video must be of at least 480p vres, ending stream")
     }
+    return nil
 }
 
 func setupRenditionFilters(height int) ([]string, string) {
@@ -52,28 +54,32 @@ func setupRenditionFilters(height int) ([]string, string) {
     filtersDefinition := ""
     namingStreamMap := ""
 
-    for i := 0; i<lastRenditionIndex+1; i++{
-        filtersDefinition += fmt.Sprintf("[0:v]scale=%d:%d[v%d];", renditions[i].width, renditions[i].width, i)
+    for i := 0; i<lastRenditionIndex; i++{
+        filtersDefinition += fmt.Sprintf("[0:v]scale=%d:%d[v%d];", renditions[i].width, renditions[i].height, i)
         namingStreamMap += fmt.Sprintf("v:%d,a:%d,name:%dp", i, i, renditions[i].height)
     }
     
+    fmt.Println(namingStreamMap)
     options = append(options, filtersDefinition)
 
     //Definition for each filter
-    for i := 0; i<lastRenditionIndex+1; i++{
+    for i := 0; i<lastRenditionIndex; i++{
         splitParams := strings.Split(fmt.Sprintf("-map [v%d] -map 0:a:0 -c:v:%d libx264 -b:v:%d %dk -c:a:%d aac", i, i, i, renditions[i].bitrate, i), " ")
         options = append(options, splitParams...)
     }
 
     
-
-
     return options, namingStreamMap
 }
 
 
 func SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, io.WriteCloser, error) {
-    validateMediaMetadata(mediaMetadata)
+    err := validateMediaMetadata(mediaMetadata)
+    if err != nil {
+        log.Println(err)
+        return nil, nil, err
+    }
+
     createMediaFolder(mediaId)
 
     ffmpegRenditionOptions, namingStreamMap := setupRenditionFilters(mediaMetadata["height"])

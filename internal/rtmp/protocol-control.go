@@ -35,7 +35,7 @@ func setChunkSize(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Co
 
 func abortMessage(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
 	streamId := binary.BigEndian.Uint32(chunk.Data)
-	delete(protocolStatus.chunkStreams, int(streamId)) //TODO: incorrect
+	delete(protocolStatus.chunkStreams, int(streamId)) //Incorrect
 	fmt.Println("Aborted message stream ", streamId)
 }
 
@@ -74,7 +74,12 @@ func getMetadata(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Con
 	decoder.Decode(&metadata)
 	protocolStatus.mediaMetadata = metadata
 
-	_, ffmpegPipe, _ := transcoding.SetupTranscoder(protocolStatus.mediaMetadata, protocolStatus.streamProps.MediaId) 
+	_, ffmpegPipe, err := transcoding.SetupTranscoder(protocolStatus.mediaMetadata, protocolStatus.streamProps.MediaId) 
+	if err != nil {
+		protocolStatus.Socket.Close()
+		return
+	}
+	
 	protocolStatus.flvWriter = flv.NewFLVWriter(ffmpegPipe, MEDIA_BUFFER_SIZE_MS) 
 	protocolStatus.ffmpegPipe = ffmpegPipe
 }

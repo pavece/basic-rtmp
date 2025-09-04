@@ -77,7 +77,7 @@ func deleteStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Co
 	protocolStatus.flvWriter.Close()
 	protocolStatus.ffmpegPipe.Close()
 	streams.RemoveStream(protocolStatus.streamProps)
-	protocolStatus.StreamClosed = true
+	protocolStatus.Socket.Close()
 }
 
 func commandNotImplemented(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){

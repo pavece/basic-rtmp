@@ -41,8 +41,9 @@ func handleConnection(connection net.Conn){
 
 	rtmp.Handshake(connection)
 	protocolStatus := rtmp.NewProtocolStatus()
-
-	for !protocolStatus.StreamClosed {
+	protocolStatus.Socket = connection
+	
+	for {
 		rtmp.ReadChunkData(connection, protocolStatus)
 	}
 }

@@ -87,12 +87,12 @@ func buildType0MessageHeader(timestamp uint32, messageLength uint32, messageType
 // 	return buf.Bytes()
 // }
 
-func buildExtendedTimestamp(timestamp uint32) []byte{
-	extTimestampBytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(extTimestampBytes, uint32(timestamp))
+// func buildExtendedTimestamp(timestamp uint32) []byte{
+// 	extTimestampBytes := make([]byte, 4)
+// 	binary.BigEndian.PutUint32(extTimestampBytes, uint32(timestamp))
 
-	return extTimestampBytes
-}
+// 	return extTimestampBytes
+// }
 
 func prepend(data, prefix []byte) []byte {
     result := make([]byte, len(prefix)+len(data))
@@ -101,7 +101,8 @@ func prepend(data, prefix []byte) []byte {
     return result
 }
 
-//TODO: Add extended timestamp generation
+
+// Extended timestamp not supported in current version
 func buildMessageChunks(body []byte, chunkStreamId uint32, messageTypeId uint8, messageStreamId uint32, protocolStatus *ProtocolStatus)[][]byte {
 	chunkSize := int(protocolStatus.chunkSize)
 	bodyLen := len(body)

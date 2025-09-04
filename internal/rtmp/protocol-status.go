@@ -2,6 +2,7 @@ package rtmp
 
 import (
 	"io"
+	"net"
 
 	"github.com/pavece/simple-rtmp/internal/flv"
 	"github.com/pavece/simple-rtmp/internal/streams"
@@ -9,7 +10,6 @@ import (
 
 
 type ProtocolStatus struct {
-	StreamClosed 	bool
 	chunkSize       uint32
 	baseTimestamp   uint32
 	clientWindowAck uint32
@@ -19,6 +19,7 @@ type ProtocolStatus struct {
 	ffmpegPipe io.WriteCloser
 	mediaMetadata map[string]int
 	streamProps streams.StreamProps
+	Socket net.Conn
 }
 
 type Chunk struct {
@@ -28,5 +29,5 @@ type Chunk struct {
 }
 
 func NewProtocolStatus() *ProtocolStatus{
-	return &ProtocolStatus{chunkSize: 128, baseTimestamp: 0, clientWindowAck: 0, serverWindowAck: 0, chunkStreams: make(map[int]Chunk), flvWriter: nil, StreamClosed: false}
+	return &ProtocolStatus{chunkSize: 128, baseTimestamp: 0, clientWindowAck: 0, serverWindowAck: 0, chunkStreams: make(map[int]Chunk), flvWriter: nil}
 }
