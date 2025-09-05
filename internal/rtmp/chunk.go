@@ -7,8 +7,13 @@ import (
 )
 
 
-func ReadChunkData(connection net.Conn, protocolStatus *ProtocolStatus){
-	basicHeaderData := ParseBasicHeader(connection)
+func ReadChunkData(connection net.Conn, protocolStatus *ProtocolStatus) error {
+	basicHeaderData, err := ParseBasicHeader(connection)
+	if err != nil {
+		return err
+	}
+	
+
 	messageHeaderData := ParseMessageHeader(connection, basicHeaderData.Fmt)
 	type0header, ok := messageHeaderData.(Type0HeaderData)
 
@@ -46,7 +51,7 @@ func ReadChunkData(connection net.Conn, protocolStatus *ProtocolStatus){
 		handler, ok := ControlHandlers[int(currentChunkStream.Header.MessageTypeId)]
 		if !ok {
 			fmt.Println("Handler not implemented")
-			return
+			return nil
 		}
 
 		handler(currentChunkStream, protocolStatus, connection)
@@ -54,6 +59,8 @@ func ReadChunkData(connection net.Conn, protocolStatus *ProtocolStatus){
 		currentChunkStream.Data = []byte{}
 		protocolStatus.chunkStreams[basicHeaderData.ChunkStreamId] = currentChunkStream
 	}
+
+	return nil
 }
 
 

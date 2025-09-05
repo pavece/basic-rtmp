@@ -2,6 +2,7 @@ package rtmp
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -30,10 +31,11 @@ type Type2HeaderData struct {
 }
 
 
-func ParseBasicHeader(connection net.Conn) BasicHeaderData {
+func ParseBasicHeader(connection net.Conn) (BasicHeaderData, error) {
 	byte0 := make([]byte, 1)
 	if _, err := io.ReadFull(connection, byte0); err != nil{
-		log.Fatal("Failed to read first byte from chunk stream basic header")
+		fmt.Println("Failed to read first byte from chunk stream basic header")
+		return BasicHeaderData{}, err
 	}
 	
 	headerData := BasicHeaderData{}
@@ -55,7 +57,7 @@ func ParseBasicHeader(connection net.Conn) BasicHeaderData {
 
 	headerData.ChunkStreamId = csIdValue
 
-	return headerData
+	return headerData, nil
 }
 
 func ParseMessageHeader(connection net.Conn, headerType int) interface{} {

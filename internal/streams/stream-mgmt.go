@@ -2,6 +2,7 @@ package streams
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"sync"
 )
@@ -43,6 +44,12 @@ func RemoveStream(stream StreamProps){
 		}
 	}
 	streamsLock.Unlock()
+
+	_, err := os.Stat("./media/" + stream.MediaId)
+	if err == nil {
+		os.Remove("./media/" + stream.MediaId)
+	}
+
 	onStramEnd(stream)
 }
 

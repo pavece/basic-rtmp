@@ -37,13 +37,14 @@ func main() {
 }
 
 func handleConnection(connection net.Conn){
-	defer connection.Close()
-
 	rtmp.Handshake(connection)
 	protocolStatus := rtmp.NewProtocolStatus()
 	protocolStatus.Socket = connection
 	
 	for {
-		rtmp.ReadChunkData(connection, protocolStatus)
+		err := rtmp.ReadChunkData(connection, protocolStatus)
+		if err != nil {
+			break;
+		}
 	}
 }
