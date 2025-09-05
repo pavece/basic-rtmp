@@ -47,7 +47,7 @@ func RemoveStream(stream StreamProps){
 
 	_, err := os.Stat("./media/" + stream.MediaId)
 	if err == nil {
-		os.Remove("./media/" + stream.MediaId)
+		os.RemoveAll("./media/" + stream.MediaId)
 	}
 
 	onStramEnd(stream)

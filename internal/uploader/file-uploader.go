@@ -3,6 +3,7 @@ package uploader
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -45,20 +46,13 @@ func (u *FileUploader) SetupFileUploader(){
 	}
 }
 
-func (u *FileUploader) UploadFile(filePath string, destName string) error {
+func (u *FileUploader) UploadFile(fileReader io.Reader, destName string) error {
 	FileUploaderInstance.SetupFileUploader()
 	
-	file, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-
-	defer file.Close()
-
-	_, err = u.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
+	_, err := u.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket: aws.String(os.Getenv("CDN_BUCKET_NAME")),
 		Key:    aws.String(destName),
-		Body:   file,
+		Body:   fileReader,
 	})
 	
 	if err != nil {

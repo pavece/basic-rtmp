@@ -2,14 +2,39 @@ package uploader
 
 import (
 	"log"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 )
 
-//TODO: add segments to the DVR playlist
-//Watch for new .ts / .m3u8 in the media directories to opload them to the object store / CDN
+
+func fileChangeHandler(filePath string, streamMediaID string){
+    time.Sleep(1 * time.Second)
+    splitFileName := strings.Split(filePath, "\\")
+    destName := streamMediaID + "/" +splitFileName[len(splitFileName) - 1]
+
+    fileReader, err := os.Open(filePath)                        
+    if err != nil {
+        log.Printf("Failed to open %s for reading\n", filePath)
+        return
+    }
+
+    defer fileReader.Close()
+
+    if strings.HasSuffix(filePath, "master.m3u8") {
+        WriteDVRPlaylist("./media/" + streamMediaID, fileReader)
+    }
+
+    if err = FileUploaderInstance.UploadFile(fileReader, destName); err != nil {
+        log.Printf("Failed to upload %s: %v\n", filePath, err)
+    } else {
+        log.Printf("Uploaded %s as %s\n", filePath, destName)
+    }
+}
+
+//TODO: should close the watcher when stream ends
 func SetupFileWatcher(streamMediaID string) {
     mediaDir := "./media/" + streamMediaID
 
@@ -27,18 +52,7 @@ func SetupFileWatcher(streamMediaID string) {
                 }
 
                 if event.Op & fsnotify.Create == fsnotify.Create &&  (strings.HasSuffix(event.Name, ".ts") || strings.HasSuffix(event.Name, ".m3u8")){
-                    go func(filePath string) {
-                        time.Sleep(1 * time.Second)
-                        splitFileName := strings.Split(filePath, "\\")
-                        destName := streamMediaID + "/" +splitFileName[len(splitFileName) - 1]
-            
-
-                        if err := FileUploaderInstance.UploadFile(filePath, destName); err != nil {
-                            log.Printf("Failed to upload %s: %v\n", filePath, err)
-                        } else {
-                            log.Printf("Uploaded %s as %s\n", filePath, destName)
-                        }
-                    }(event.Name)
+                    go fileChangeHandler(event.Name, streamMediaID)
                 }
 
             case err, ok := <-watcher.Errors:
