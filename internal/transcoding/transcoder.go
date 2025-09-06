@@ -72,6 +72,36 @@ func setupRenditionFilters(height int) ([]string, string) {
     return options, namingStreamMap
 }
 
+func generateMasterList(height int, baseUrl string, mediaId string){
+    lastRenditionIndex := 0;
+    for i, rendition := range renditions {
+        if rendition.height >= height {
+            lastRenditionIndex = i
+        }
+    }
+
+    masterlistContent := []string{}
+
+    masterlistContent = append(masterlistContent, "#EXTM3U")
+    masterlistContent = append(masterlistContent, "#EXT-X-VERSION:3")
+
+    for i := 0; i<lastRenditionIndex; i++ {
+        masterlistContent = append(masterlistContent, fmt.Sprintf("#EXT-X-STREAM-INF:BANDWIDTH=%d,AVERAGE-BANDWIDTH=%d,RESOLUTION=%dx%d,CODECS=\"avc1.64001f,mp4a.40.2\"", renditions[i].bitrate + 500, renditions[i].bitrate + 500, renditions[i].width, renditions[i].height))
+        masterlistContent = append(masterlistContent, fmt.Sprintf("%s%dp.m3u8", baseUrl, renditions[i].height))
+    }
+
+    os.WriteFile("./media/"+mediaId+"/master.m3u8", []byte(strings.Join(masterlistContent, "\n")), 0777)
+}
+
+func printMasterURL(mediaId string){
+    s3Endpoint := os.Getenv("S3_ENDPOINT")
+    bucketName := os.Getenv("CDN_BUCKET_NAME")
+    masterUrl := "Masterlist URL: " + s3Endpoint + "/" + bucketName + "/" + mediaId + "/master.m3u8"
+
+    fmt.Println("\n" + strings.Repeat("*", len(masterUrl) + 4))
+    fmt.Printf("* %s *\n", masterUrl)
+    fmt.Println(strings.Repeat("*", len(masterUrl) + 4) + "\n")
+}
 
 func SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, io.WriteCloser, error) {
     err := validateMediaMetadata(mediaMetadata)
@@ -81,8 +111,10 @@ func SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, i
     }
 
     createMediaFolder(mediaId)
+    printMasterURL(mediaId)
 
     ffmpegRenditionOptions, namingStreamMap := setupRenditionFilters(mediaMetadata["height"])
+    baseUrl := os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+mediaId+"/"
 
     args := []string{
         "-i", "pipe:0",
@@ -91,11 +123,10 @@ func SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, i
     args = append(args, "-f", "hls",
         "-hls_time", "2",
         "-hls_list_size", "4",
-        "-hls_flags", "append_list+delete_segments",
-        "-hls_base_url", os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+mediaId+"/",
+        "-hls_flags", "append_list+delete_segments+independent_segments",
+        "-hls_base_url", baseUrl,
         "-hls_segment_filename", "./media/"+mediaId+"/%v-segment-%d.ts",
         "-var_stream_map", namingStreamMap,
-        "-master_pl_name", "master.m3u8",
         "./media/"+mediaId+"/%v.m3u8",
     )
 
@@ -114,5 +145,7 @@ func SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, i
     }
 
 	uploader.SetupFileWatcher(mediaId)
+    generateMasterList(mediaMetadata["height"], baseUrl, mediaId)
+
     return ffmpegCommand, ffmpegPipe, nil
 }

@@ -1,6 +1,7 @@
 package uploader
 
 import (
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -23,14 +24,15 @@ func fileChangeHandler(filePath string, streamMediaID string){
 
     defer fileReader.Close()
 
-    if strings.HasSuffix(filePath, "master.m3u8") {
-        WriteDVRPlaylist("./media/" + streamMediaID, fileReader)
-    }
-
     if err = FileUploaderInstance.UploadFile(fileReader, destName); err != nil {
         log.Printf("Failed to upload %s: %v\n", filePath, err)
     } else {
         log.Printf("Uploaded %s as %s\n", filePath, destName)
+    }
+
+    if strings.HasSuffix(filePath, "master.m3u8") {
+        fileReader.Seek(0, io.SeekStart)
+        WriteDVRPlaylist("./media/" + streamMediaID, fileReader)
     }
 }
 
