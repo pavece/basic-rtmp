@@ -42,7 +42,7 @@ func validateMediaMetadata(mediaMetadata map[string]int) error {
 func setupRenditionFilters(height int) ([]string, string) {
     lastRenditionIndex := 0;
     for i, rendition := range renditions {
-        if rendition.height >= height {
+        if rendition.height <= height {
             lastRenditionIndex = i
         }
     }
@@ -54,20 +54,18 @@ func setupRenditionFilters(height int) ([]string, string) {
     filtersDefinition := ""
     namingStreamMap := ""
 
-    for i := 0; i<lastRenditionIndex; i++{
+    for i := 0; i<=lastRenditionIndex; i++{
         filtersDefinition += fmt.Sprintf("[0:v]scale=%d:%d[v%d];", renditions[i].width, renditions[i].height, i)
-        namingStreamMap += fmt.Sprintf("v:%d,a:%d,name:%dp", i, i, renditions[i].height)
+        namingStreamMap += fmt.Sprintf("v:%d,a:%d,name:%dp ", i, i, renditions[i].height)
     }
-    
-    fmt.Println(namingStreamMap)
     options = append(options, filtersDefinition)
-
+    
     //Definition for each filter
-    for i := 0; i<lastRenditionIndex; i++{
+    for i := 0; i<=lastRenditionIndex; i++{
         splitParams := strings.Split(fmt.Sprintf("-map [v%d] -map 0:a:0 -c:v:%d libx264 -b:v:%d %dk -c:a:%d aac", i, i, i, renditions[i].bitrate, i), " ")
         options = append(options, splitParams...)
     }
-
+    
     
     return options, namingStreamMap
 }
@@ -75,7 +73,7 @@ func setupRenditionFilters(height int) ([]string, string) {
 func generateMasterList(height int, baseUrl string, mediaId string){
     lastRenditionIndex := 0;
     for i, rendition := range renditions {
-        if rendition.height >= height {
+        if rendition.height <= height {
             lastRenditionIndex = i
         }
     }
@@ -85,7 +83,7 @@ func generateMasterList(height int, baseUrl string, mediaId string){
     masterlistContent = append(masterlistContent, "#EXTM3U")
     masterlistContent = append(masterlistContent, "#EXT-X-VERSION:3")
 
-    for i := 0; i<lastRenditionIndex; i++ {
+    for i := 0; i<=lastRenditionIndex; i++ {
         masterlistContent = append(masterlistContent, fmt.Sprintf("#EXT-X-STREAM-INF:BANDWIDTH=%d,AVERAGE-BANDWIDTH=%d,RESOLUTION=%dx%d,CODECS=\"avc1.64001f,mp4a.40.2\"", renditions[i].bitrate + 500, renditions[i].bitrate + 500, renditions[i].width, renditions[i].height))
         masterlistContent = append(masterlistContent, fmt.Sprintf("%s%dp.m3u8", baseUrl, renditions[i].height))
     }
