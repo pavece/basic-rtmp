@@ -4,25 +4,72 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
-func createDVRPlaylist(mediaPath string, masterReader io.Reader){
+func reverseSlice[T any](slice []T){
+	for i, j := 0, len(slice)-1; i<j; i, j = i+1, j-1{
+		slice[i], slice[j] = slice[j], slice[i]
+	}
+}
+
+func createDvrDirectoryIfNotExists(mediaPath string){
+	path := mediaPath + "/dvr"
+	_, err := os.Stat(path)
+	
+	if os.IsNotExist(err) {
+		os.Mkdir(path, 0777);
+	}
+}
+
+//Clones the whole list (initial cloning)
+func createDVRPlaylist(mediaPath string, filename string, masterReader io.Reader){
 	masterPlaylistContent, err := io.ReadAll(masterReader)
 	if err != nil {
-		log.Fatal("Failed to read masterlist")
+		log.Fatal("Error reading .m3u8 list for DVR generation")
 	}
 
-	err = os.Mkdir(mediaPath + "/dvr", 0777)
-	err = os.WriteFile(mediaPath + "/dvr/dvr.m3u8", masterPlaylistContent, 0777)
+	createDvrDirectoryIfNotExists(mediaPath)
+
+	err = os.WriteFile(mediaPath + "/dvr/" + filename, masterPlaylistContent, 0777)
 	if err != nil {
 		log.Fatal("Couldn't generate DVR: Failed to write DVR file")
 	}
 }
 
-func WriteDVRPlaylist(mediaPath string, masterReader io.Reader) {
-	_, err := os.Stat(mediaPath + "/dvr/dvr.m3u8")
+//Copy the latest segment (from last #EXTINF to list end)
+func appendLastSegment(mediaPath string, filename string, masterReader io.Reader){
+	listContent, err := io.ReadAll(masterReader)
+	if err != nil {
+		log.Fatal("Error reading .m3u8 list for DVR generation")
+	}
+
+	listLines := strings.Split(string(listContent), "\n")
+	lastSegment := []string{}
+
+	for i := len(listLines)-1; i!=0; i--{
+		lastSegment = append(lastSegment, listLines[i])
+		if strings.HasPrefix(listLines[i], "#EXTINF") {
+			break
+		}
+	}
+
+	file, err := os.OpenFile(mediaPath + "/dvr/" + filename, os.O_APPEND, 0777)
+	if err != nil {
+		log.Fatal("Failed to open ", filename, " for last segment appending")
+	}
+
+	reverseSlice(lastSegment)
+	file.Write([]byte(strings.Join(lastSegment, "\n")))
+}
+
+
+func WriteDVRPlaylist(mediaPath string, filename string, masterReader io.Reader) {
+	_, err := os.Stat(mediaPath + "/dvr/" + filename)
 	if os.IsNotExist(err) {
-		createDVRPlaylist(mediaPath, masterReader)
+		createDVRPlaylist(mediaPath, filename, masterReader)
 		return
 	}
+
+	appendLastSegment(mediaPath, filename, masterReader)
 }

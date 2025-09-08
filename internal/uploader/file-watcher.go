@@ -30,9 +30,9 @@ func fileChangeHandler(filePath string, streamMediaID string){
         log.Printf("Uploaded %s as %s\n", filePath, destName)
     }
 
-    if strings.HasSuffix(filePath, "master.m3u8") {
+    if strings.HasSuffix(filePath, ".m3u8") {
         fileReader.Seek(0, io.SeekStart)
-        WriteDVRPlaylist("./media/" + streamMediaID, fileReader)
+        WriteDVRPlaylist("./media/" + streamMediaID, splitFileName[len(splitFileName) - 1], fileReader)
     }
 }
 
