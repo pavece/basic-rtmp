@@ -5,6 +5,7 @@ import (
 	"os"
 	"sort"
 	"sync"
+	"time"
 )
 
 type StreamProps struct {
@@ -45,13 +46,19 @@ func RemoveStream(stream StreamProps){
 	}
 	streamsLock.Unlock()
 
+	onStramEnd(stream)
+	postStreamCleanup(stream)
+}
+
+func postStreamCleanup(stream StreamProps){
+	time.Sleep(4 * time.Second)
+
 	_, err := os.Stat("./media/" + stream.MediaId)
 	if err == nil {
 		os.RemoveAll("./media/" + stream.MediaId)
 	}
-
-	onStramEnd(stream)
 }
+
 
 
 /* 

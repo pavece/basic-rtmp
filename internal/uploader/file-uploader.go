@@ -15,6 +15,7 @@ import (
 var FileUploaderInstance FileUploader
 
 
+
 type FileUploader struct {
 	s3Client *s3.Client
 }

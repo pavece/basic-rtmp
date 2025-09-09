@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+//TODO: Function for uploading these results 
+
 func reverseSlice[T any](slice []T){
 	for i, j := 0, len(slice)-1; i<j; i, j = i+1, j-1{
 		slice[i], slice[j] = slice[j], slice[i]
@@ -30,6 +32,9 @@ func createDVRPlaylist(mediaPath string, filename string, masterReader io.Reader
 	}
 
 	createDvrDirectoryIfNotExists(mediaPath)
+	listLines := strings.Split(string(masterPlaylistContent), "\n")
+	DVRLastLine[filename] = listLines[len(listLines)-2] //Skip the end space
+
 
 	err = os.WriteFile(mediaPath + "/dvr/" + filename, masterPlaylistContent, 0777)
 	if err != nil {
@@ -37,7 +42,7 @@ func createDVRPlaylist(mediaPath string, filename string, masterReader io.Reader
 	}
 }
 
-//Copy the latest segment (from last #EXTINF to list end)
+//Copy the latest segment(s)
 func appendLastSegment(mediaPath string, filename string, masterReader io.Reader){
 	listContent, err := io.ReadAll(masterReader)
 	if err != nil {
@@ -46,12 +51,15 @@ func appendLastSegment(mediaPath string, filename string, masterReader io.Reader
 
 	listLines := strings.Split(string(listContent), "\n")
 	lastSegment := []string{}
+	i := len(listLines)-1;
 
-	for i := len(listLines)-1; i!=0; i--{
+	for DVRLastLine[filename] != listLines[i] && i>= 0 {
 		lastSegment = append(lastSegment, listLines[i])
-		if strings.HasPrefix(listLines[i], "#EXTINF") {
-			break
-		}
+		i--
+	}
+
+	if len(lastSegment) >= 2 {
+		DVRLastLine[filename] = lastSegment[1] //Ignore trailing whitespace
 	}
 
 	file, err := os.OpenFile(mediaPath + "/dvr/" + filename, os.O_APPEND, 0777)

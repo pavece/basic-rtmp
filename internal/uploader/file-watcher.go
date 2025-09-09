@@ -10,6 +10,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+var DVRLastLine map[string]string
 
 func fileChangeHandler(filePath string, streamMediaID string){
     time.Sleep(1 * time.Second)
@@ -39,6 +40,7 @@ func fileChangeHandler(filePath string, streamMediaID string){
 //TODO: should close the watcher when stream ends
 func SetupFileWatcher(streamMediaID string) {
     mediaDir := "./media/" + streamMediaID
+    DVRLastLine = make(map[string]string)
 
     watcher, err := fsnotify.NewWatcher()
     if err != nil {
