@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/pavece/simple-rtmp/internal/callbacks"
 	"github.com/pavece/simple-rtmp/internal/streams"
 	"github.com/yutopp/go-amf0"
 )
@@ -56,13 +57,13 @@ func publish(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 	decoder.Decode(&streamKey)
 	decoder.Decode(&streamKey)
 
-	err := streams.ValidateStreamKey(streamKey)
+	err := callbacks.ValidateStreamKey(streamKey)
 	if err != nil {
 		deleteStream(Chunk{}, protocolStatus, connection)
 		connection.Close()
 	}
 
-	mediaId, err := streams.GenerateMediaId(streamKey)
+	mediaId, err := callbacks.GenerateMediaId(streamKey)
 	if err != nil {
 		deleteStream(Chunk{}, protocolStatus, connection)
 		connection.Close()

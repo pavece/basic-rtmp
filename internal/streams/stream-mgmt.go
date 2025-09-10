@@ -1,11 +1,12 @@
 package streams
 
 import (
-	"fmt"
 	"os"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/pavece/simple-rtmp/internal/callbacks"
 )
 
 type StreamProps struct {
@@ -46,7 +47,7 @@ func RemoveStream(stream StreamProps){
 	}
 	streamsLock.Unlock()
 
-	onStramEnd(stream)
+	callbacks.OnStramEnd(stream.StreamId, stream.MediaId)
 	postStreamCleanup(stream)
 }
 
@@ -57,13 +58,4 @@ func postStreamCleanup(stream StreamProps){
 	if err == nil {
 		os.RemoveAll("./media/" + stream.MediaId)
 	}
-}
-
-
-
-/* 
-	Use this to mark streams as completed or run custom logic related to stream ends
-*/
-func onStramEnd(stream StreamProps){
-	fmt.Printf("Stream with id %d and media id %s has ended \n", stream.StreamId, stream.MediaId)
 }

@@ -1,10 +1,23 @@
-package streams
+package callbacks
 
-import "github.com/google/uuid"
+import (
+	"fmt"
+
+	"github.com/google/uuid"
+)
 
 /*
-	Create your own validation logic
+	This package contains all the callbacks you can modify.
 */
+
+//Use this to mark streams as completed or run custom logic related to stream ends
+func OnStramEnd(streamId int, mediaId string){
+	fmt.Printf("Stream with id %d and media id %s has ended \n", streamId, mediaId)
+}
+
+
+
+//Create your own validation logic
 func ValidateStreamKey(streamKey string) error{
 	return nil
 }
