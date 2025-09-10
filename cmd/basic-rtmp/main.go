@@ -6,7 +6,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/pavece/simple-rtmp/internal/rtmp"
-	"github.com/pavece/simple-rtmp/internal/uploader"
 )
 
 func main() {
@@ -22,7 +21,6 @@ func main() {
 		return
 	}
 
-	uploader.FileUploaderInstance.SetupFileUploader()
 	fmt.Println("Basic RTMP server started")
 
 	for {

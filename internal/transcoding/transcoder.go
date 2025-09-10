@@ -12,6 +12,7 @@ import (
 	"github.com/pavece/simple-rtmp/internal/uploader"
 )
 
+
 type Rendition struct {
     bitrate int
     height int
@@ -20,26 +21,36 @@ type Rendition struct {
 
 var renditions []Rendition = []Rendition{{bitrate: 1000, height: 480, width: 852}, {bitrate: 5000, height: 720, width: 1280}/*, {bitrate: 8000, height: 1080, width: 1920} */}
 
-func createMediaFolder(mediaId string){
+
+type Transcoder struct {
+    mediaId string
+    mediaMetadata map[string]int
+
+    mediaUploader uploader.FileWatcher
+}
+
+
+func (t *Transcoder) createMediaFolder(){
     _, err := os.Stat("./media")
     if os.IsNotExist(err) {
         os.Mkdir("./media", 0777)
     }
 
-    err = os.Mkdir("./media/" + mediaId, 0777);
+    err = os.Mkdir("./media/" + t.mediaId, 0777);
     if err != nil {
         log.Fatal("Failed to create media folder")
     }
 }
 
-func validateMediaMetadata(mediaMetadata map[string]int) error {
-    if mediaMetadata["height"] < 480 || mediaMetadata["width"] < 852 {
+func (t *Transcoder) validateMediaMetadata() error {
+    if t.mediaMetadata["height"] < 480 || t.mediaMetadata["width"] < 852 {
         return errors.New("video must be of at least 480p vres, ending stream")
     }
     return nil
 }
 
-func setupRenditionFilters(height int) ([]string, string) {
+func (t *Transcoder) setupRenditionFilters() ([]string, string) {
+    height := t.mediaMetadata["height"]
     lastRenditionIndex := 0;
     for i, rendition := range renditions {
         if rendition.height <= height {
@@ -70,7 +81,10 @@ func setupRenditionFilters(height int) ([]string, string) {
     return options, namingStreamMap
 }
 
-func generateMasterList(height int, baseUrl string, mediaId string){
+func (t *Transcoder) generateMasterList(){
+    height := t.mediaMetadata["height"]
+    baseUrl := os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+t.mediaId+"/"
+
     lastRenditionIndex := 0;
     for i, rendition := range renditions {
         if rendition.height <= height {
@@ -88,7 +102,7 @@ func generateMasterList(height int, baseUrl string, mediaId string){
         masterlistContent = append(masterlistContent, fmt.Sprintf("%s%dp.m3u8", baseUrl, renditions[i].height))
     }
 
-    os.WriteFile("./media/"+mediaId+"/master.m3u8", []byte(strings.Join(masterlistContent, "\n")), 0777)
+    os.WriteFile("./media/"+t.mediaId+"/master.m3u8", []byte(strings.Join(masterlistContent, "\n")), 0777)
 }
 
 func printMasterURL(mediaId string){
@@ -101,18 +115,22 @@ func printMasterURL(mediaId string){
     fmt.Println(strings.Repeat("*", len(masterUrl) + 4) + "\n")
 }
 
-func SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, io.WriteCloser, error) {
-    err := validateMediaMetadata(mediaMetadata)
+
+func (t *Transcoder) SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, io.WriteCloser, error) {
+    t.mediaMetadata = mediaMetadata
+    t.mediaId = mediaId
+
+    err := t.validateMediaMetadata()
     if err != nil {
         log.Println(err)
         return nil, nil, err
     }
 
-    createMediaFolder(mediaId)
+    t.createMediaFolder()
     printMasterURL(mediaId)
 
-    ffmpegRenditionOptions, namingStreamMap := setupRenditionFilters(mediaMetadata["height"])
-    baseUrl := os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+mediaId+"/"
+    ffmpegRenditionOptions, namingStreamMap := t.setupRenditionFilters()
+    baseUrl := os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+t.mediaId+"/"
 
     args := []string{
         "-i", "pipe:0",
@@ -129,9 +147,7 @@ func SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, i
     )
 
     ffmpegCommand := exec.Command("ffmpeg", args...)
-
     ffmpegCommand.Stderr = os.Stderr
-
     ffmpegPipe, err := ffmpegCommand.StdinPipe()
     if err != nil {
         return nil, nil, err
@@ -142,8 +158,8 @@ func SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, i
         return nil, nil, err
     }
 
-	uploader.SetupFileWatcher(mediaId)
-    generateMasterList(mediaMetadata["height"], baseUrl, mediaId)
+	t.mediaUploader.InitFileWatcher(mediaId)
+    t.generateMasterList()
 
     return ffmpegCommand, ffmpegPipe, nil
 }

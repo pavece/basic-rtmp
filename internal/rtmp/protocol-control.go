@@ -7,7 +7,6 @@ import (
 	"net"
 
 	"github.com/pavece/simple-rtmp/internal/flv"
-	"github.com/pavece/simple-rtmp/internal/transcoding"
 	"github.com/yutopp/go-amf0"
 )
 
@@ -74,7 +73,7 @@ func getMetadata(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Con
 	decoder.Decode(&metadata)
 	protocolStatus.mediaMetadata = metadata
 
-	_, ffmpegPipe, err := transcoding.SetupTranscoder(protocolStatus.mediaMetadata, protocolStatus.streamProps.MediaId) 
+	_, ffmpegPipe, err := protocolStatus.transcoder.SetupTranscoder(protocolStatus.mediaMetadata, protocolStatus.streamProps.MediaId) 
 	if err != nil {
 		protocolStatus.Socket.Close()
 		return

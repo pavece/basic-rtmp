@@ -6,6 +6,7 @@ import (
 
 	"github.com/pavece/simple-rtmp/internal/flv"
 	"github.com/pavece/simple-rtmp/internal/streams"
+	"github.com/pavece/simple-rtmp/internal/transcoding"
 )
 
 
@@ -20,7 +21,9 @@ type ProtocolStatus struct {
 	mediaMetadata map[string]int
 	streamProps streams.StreamProps
 	Socket net.Conn
+	transcoder transcoding.Transcoder
 }
+
 
 type Chunk struct {
 	BasicHeader BasicHeaderData
