@@ -12,10 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-var FileUploaderInstance FileUploader
-
-
-
 type FileUploader struct {
 	s3Client *s3.Client
 }
@@ -41,15 +37,17 @@ func initFileUploader() *s3.Client{
 	return s3Client
 }
 
-func (u *FileUploader) SetupFileUploader(){
+func (u *FileUploader) NewUploader() *FileUploader{
 	if u.s3Client == nil {
-		u.s3Client = initFileUploader()
+		return &FileUploader{
+			s3Client: initFileUploader(),
+		}
 	}
+
+	return u
 }
 
 func (u *FileUploader) UploadFile(fileReader io.Reader, destName string) error {
-	FileUploaderInstance.SetupFileUploader()
-	
 	_, err := u.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket: aws.String(os.Getenv("CDN_BUCKET_NAME")),
 		Key:    aws.String(destName),

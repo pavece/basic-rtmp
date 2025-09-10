@@ -10,42 +10,23 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-var DVRLastLine map[string]string
-
-func fileChangeHandler(filePath string, streamMediaID string){
-    time.Sleep(1 * time.Second)
-    splitFileName := strings.Split(filePath, "\\")
-    destName := streamMediaID + "/" +splitFileName[len(splitFileName) - 1]
-
-    fileReader, err := os.Open(filePath)                        
-    if err != nil {
-        log.Printf("Failed to open %s for reading\n", filePath)
-        return
-    }
-
-    defer fileReader.Close()
-
-    if err = FileUploaderInstance.UploadFile(fileReader, destName); err != nil {
-        log.Printf("Failed to upload %s: %v\n", filePath, err)
-    } else {
-        log.Printf("Uploaded %s as %s\n", filePath, destName)
-    }
-
-    if strings.HasSuffix(filePath, ".m3u8") {
-        fileReader.Seek(0, io.SeekStart)
-        WriteDVRPlaylist("./media/" + streamMediaID, splitFileName[len(splitFileName) - 1], fileReader)
-    }
+var fileUploader *FileUploader = &FileUploader{} //Unique instance for every stream
+type FileWatcher struct {
+    watcher *fsnotify.Watcher
+    dvrGenerator *DVRGenerator
 }
 
-//TODO: should close the watcher when stream ends
-func SetupFileWatcher(streamMediaID string) {
+func (w *FileWatcher) InitFileWatcher(streamMediaID string) {
     mediaDir := "./media/" + streamMediaID
-    DVRLastLine = make(map[string]string)
 
     watcher, err := fsnotify.NewWatcher()
+    w.watcher = watcher
     if err != nil {
         log.Fatal(err)
     }
+
+    fileUploader = fileUploader.NewUploader()
+    w.dvrGenerator = NewDVRGenerator()
 
     go func() {
         for {
@@ -56,7 +37,7 @@ func SetupFileWatcher(streamMediaID string) {
                 }
 
                 if event.Op & fsnotify.Create == fsnotify.Create &&  (strings.HasSuffix(event.Name, ".ts") || strings.HasSuffix(event.Name, ".m3u8")){
-                    go fileChangeHandler(event.Name, streamMediaID)
+                    go w.fileChangeHandler(event.Name, streamMediaID)
                 }
 
             case err, ok := <-watcher.Errors:
@@ -73,4 +54,29 @@ func SetupFileWatcher(streamMediaID string) {
     }
 
     log.Println("Watching", mediaDir, "for new .ts / .m3u8 files...")
+}
+
+func (w *FileWatcher) fileChangeHandler(filePath string, streamMediaID string){
+    time.Sleep(1 * time.Second)
+    splitFileName := strings.Split(filePath, "\\")
+    destName := streamMediaID + "/" +splitFileName[len(splitFileName) - 1]
+
+    fileReader, err := os.Open(filePath)                        
+    if err != nil {
+        log.Printf("Failed to open %s for reading\n", filePath)
+        return
+    }
+
+    defer fileReader.Close()
+
+    if err = fileUploader.UploadFile(fileReader, destName); err != nil {
+        log.Printf("Failed to upload %s: %v\n", filePath, err)
+    } else {
+        log.Printf("Uploaded %s as %s\n", filePath, destName)
+    }
+
+    if strings.HasSuffix(filePath, ".m3u8") {
+        fileReader.Seek(0, io.SeekStart)
+        w.dvrGenerator.WriteDVRPlaylist("./media/" + streamMediaID, splitFileName[len(splitFileName) - 1], fileReader)
+    }
 }
