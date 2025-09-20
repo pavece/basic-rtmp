@@ -16,7 +16,7 @@ type FileWatcher struct {
     dvrGenerator *DVRGenerator
 }
 
-func (w *FileWatcher) InitFileWatcher(streamMediaID string) {
+func (w *FileWatcher) InitFileWatcher(streamMediaID string, videoHeight int) {
     mediaDir := "./media/" + streamMediaID
 
     watcher, err := fsnotify.NewWatcher()
@@ -26,7 +26,7 @@ func (w *FileWatcher) InitFileWatcher(streamMediaID string) {
     }
 
     fileUploader = fileUploader.NewUploader()
-    w.dvrGenerator = NewDVRGenerator()
+    w.dvrGenerator = NewDVRGenerator(videoHeight, streamMediaID, fileUploader)
 
     go func() {
         for {

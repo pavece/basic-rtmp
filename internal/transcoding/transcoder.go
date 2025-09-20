@@ -9,18 +9,9 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/pavece/simple-rtmp/internal/config"
 	"github.com/pavece/simple-rtmp/internal/uploader"
 )
-
-
-type Rendition struct {
-    bitrate int
-    height int
-    width int
-}
-
-var renditions []Rendition = []Rendition{{bitrate: 1000, height: 480, width: 852}, {bitrate: 5000, height: 720, width: 1280}/*, {bitrate: 8000, height: 1080, width: 1920} */}
-
 
 type Transcoder struct {
     mediaId string
@@ -52,8 +43,8 @@ func (t *Transcoder) validateMediaMetadata() error {
 func (t *Transcoder) setupRenditionFilters() ([]string, string) {
     height := t.mediaMetadata["height"]
     lastRenditionIndex := 0;
-    for i, rendition := range renditions {
-        if rendition.height <= height {
+    for i, rendition := range config.Renditions {
+        if rendition.Height <= height {
             lastRenditionIndex = i
         }
     }
@@ -66,14 +57,14 @@ func (t *Transcoder) setupRenditionFilters() ([]string, string) {
     namingStreamMap := ""
 
     for i := 0; i<=lastRenditionIndex; i++{
-        filtersDefinition += fmt.Sprintf("[0:v]scale=%d:%d[v%d];", renditions[i].width, renditions[i].height, i)
-        namingStreamMap += fmt.Sprintf("v:%d,a:%d,name:%dp ", i, i, renditions[i].height)
+        filtersDefinition += fmt.Sprintf("[0:v]scale=%d:%d[v%d];", config.Renditions[i].Width, config.Renditions[i].Height, i)
+        namingStreamMap += fmt.Sprintf("v:%d,a:%d,name:%dp ", i, i, config.Renditions[i].Height)
     }
     options = append(options, filtersDefinition)
     
     //Definition for each filter
     for i := 0; i<=lastRenditionIndex; i++{
-        splitParams := strings.Split(fmt.Sprintf("-map [v%d] -map 0:a:0 -c:v:%d libx264 -b:v:%d %dk -c:a:%d aac", i, i, i, renditions[i].bitrate, i), " ")
+        splitParams := strings.Split(fmt.Sprintf("-map [v%d] -map 0:a:0 -c:v:%d libx264 -b:v:%d %dk -c:a:%d aac", i, i, i, config.Renditions[i].Bitrate, i), " ")
         options = append(options, splitParams...)
     }
     
@@ -86,8 +77,8 @@ func (t *Transcoder) generateMasterList(){
     baseUrl := os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+t.mediaId+"/"
 
     lastRenditionIndex := 0;
-    for i, rendition := range renditions {
-        if rendition.height <= height {
+    for i, rendition := range config.Renditions {
+        if rendition.Height <= height {
             lastRenditionIndex = i
         }
     }
@@ -98,8 +89,8 @@ func (t *Transcoder) generateMasterList(){
     masterlistContent = append(masterlistContent, "#EXT-X-VERSION:3")
 
     for i := 0; i<=lastRenditionIndex; i++ {
-        masterlistContent = append(masterlistContent, fmt.Sprintf("#EXT-X-STREAM-INF:BANDWIDTH=%d,AVERAGE-BANDWIDTH=%d,RESOLUTION=%dx%d,CODECS=\"avc1.64001f,mp4a.40.2\"", renditions[i].bitrate + 500, renditions[i].bitrate + 500, renditions[i].width, renditions[i].height))
-        masterlistContent = append(masterlistContent, fmt.Sprintf("%s%dp.m3u8", baseUrl, renditions[i].height))
+        masterlistContent = append(masterlistContent, fmt.Sprintf("#EXT-X-STREAM-INF:BANDWIDTH=%d,AVERAGE-BANDWIDTH=%d,RESOLUTION=%dx%d,CODECS=\"avc1.64001f,mp4a.40.2\"", config.Renditions[i].Bitrate + 500, config.Renditions[i].Bitrate + 500, config.Renditions[i].Width, config.Renditions[i].Height))
+        masterlistContent = append(masterlistContent, fmt.Sprintf("%s%dp.m3u8", baseUrl, config.Renditions[i].Height))
     }
 
     os.WriteFile("./media/"+t.mediaId+"/master.m3u8", []byte(strings.Join(masterlistContent, "\n")), 0777)
@@ -158,7 +149,7 @@ func (t *Transcoder) SetupTranscoder(mediaMetadata map[string]int, mediaId strin
         return nil, nil, err
     }
 
-	t.mediaUploader.InitFileWatcher(mediaId)
+	t.mediaUploader.InitFileWatcher(mediaId, t.mediaMetadata["height"])
     t.generateMasterList()
 
     return ffmpegCommand, ffmpegPipe, nil

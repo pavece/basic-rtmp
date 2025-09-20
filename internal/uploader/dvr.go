@@ -1,16 +1,23 @@
 package uploader
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/pavece/simple-rtmp/internal/config"
 )
 
 //TODO: Function for uploading these results
 
 type DVRGenerator struct {
 	DVRLastLine map[string]string
+	VideoHeight int
+	MediaId string
+	Uploader *FileUploader
 }
 
 func reverseSlice[T any](slice []T){
@@ -40,7 +47,7 @@ func (d *DVRGenerator) createDVRPlaylist(mediaPath string, filename string, mast
 	d.DVRLastLine[filename] = listLines[len(listLines)-2] //Skip the end space
 
 
-	err = os.WriteFile(mediaPath + "/dvr/" + filename, masterPlaylistContent, 0777)
+	err = os.WriteFile(mediaPath + "/dvr/" + "dvr-" + filename, masterPlaylistContent, 0777)
 	if err != nil {
 		log.Fatal("Couldn't generate DVR: Failed to write DVR file")
 	}
@@ -75,19 +82,49 @@ func (d *DVRGenerator) appendLastSegment(mediaPath string, filename string, mast
 	file.Write([]byte(strings.Join(lastSegment, "\n")))
 }
 
+func (d *DVRGenerator) generateAndUploadMasterlist(){
+    baseUrl := os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+d.MediaId+"/"
+
+    lastRenditionIndex := 0;
+    for i, rendition := range config.Renditions {
+        if rendition.Height <= d.VideoHeight {
+            lastRenditionIndex = i
+        }
+    }
+
+    masterlistContent := []string{}
+
+    masterlistContent = append(masterlistContent, "#EXTM3U")
+    masterlistContent = append(masterlistContent, "#EXT-X-VERSION:3")
+
+    for i := 0; i<=lastRenditionIndex; i++ {
+        masterlistContent = append(masterlistContent, fmt.Sprintf("#EXT-X-STREAM-INF:BANDWIDTH=%d,AVERAGE-BANDWIDTH=%d,RESOLUTION=%dx%d,CODECS=\"avc1.64001f,mp4a.40.2\"", config.Renditions[i].Bitrate + 500, config.Renditions[i].Bitrate + 500, config.Renditions[i].Width, config.Renditions[i].Height))
+        masterlistContent = append(masterlistContent, fmt.Sprintf("%sdvr-%dp.m3u8", baseUrl, config.Renditions[i].Height))
+    }
+
+	d.Uploader.UploadFile(bytes.NewReader([]byte(strings.Join(masterlistContent, "\n"))), fmt.Sprintf("%s/dvr-master.m3u8", d.MediaId))
+}
 
 func (d *DVRGenerator) WriteDVRPlaylist(mediaPath string, filename string, masterReader io.Reader) {
-	_, err := os.Stat(mediaPath + "/dvr/" + filename)
+	if strings.HasPrefix(filename, "master") {
+		d.generateAndUploadMasterlist()
+		return
+	}
+
+	_, err := os.Stat(mediaPath + "/dvr/" + "dvr-" + filename)
 	if os.IsNotExist(err) {
-		d.createDVRPlaylist(mediaPath, filename, masterReader)
+		d.createDVRPlaylist(mediaPath,"dvr-" + filename, masterReader)
 		return
 	}
 
 	d.appendLastSegment(mediaPath, filename, masterReader)
 }
 
-func NewDVRGenerator() *DVRGenerator{
+func NewDVRGenerator(videoHeight int, mediaId string, uploader *FileUploader) *DVRGenerator{
 	return &DVRGenerator{
 		DVRLastLine: make(map[string]string),
+		VideoHeight: videoHeight,
+		MediaId: mediaId,
+		Uploader: uploader,
 	}
 }
