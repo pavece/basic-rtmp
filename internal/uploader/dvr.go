@@ -11,14 +11,15 @@ import (
 	"github.com/pavece/simple-rtmp/internal/config"
 )
 
-//TODO: Function for uploading these results
-
+const DVR_UPLOAD_SEGMENT_WINDOW = 5
 type DVRGenerator struct {
 	DVRLastLine map[string]string
 	VideoHeight int
 	MediaId string
 	Uploader *FileUploader
+	SegmentsSinceLastUpload map[string]int
 }
+
 
 func reverseSlice[T any](slice []T){
 	for i, j := 0, len(slice)-1; i<j; i, j = i+1, j-1{
@@ -47,7 +48,7 @@ func (d *DVRGenerator) createDVRPlaylist(mediaPath string, filename string, mast
 	d.DVRLastLine[filename] = listLines[len(listLines)-2] //Skip the end space
 
 
-	err = os.WriteFile(mediaPath + "/dvr/" + "dvr-" + filename, masterPlaylistContent, 0777)
+	err = os.WriteFile(mediaPath + "/dvr/" +  filename, masterPlaylistContent, 0777)
 	if err != nil {
 		log.Fatal("Couldn't generate DVR: Failed to write DVR file")
 	}
@@ -73,14 +74,47 @@ func (d *DVRGenerator) appendLastSegment(mediaPath string, filename string, mast
 		d.DVRLastLine[filename] = lastSegment[1] //Ignore trailing whitespace
 	}
 
-	file, err := os.OpenFile(mediaPath + "/dvr/" + filename, os.O_APPEND, 0777)
+	file, err := os.OpenFile(mediaPath + "/dvr/" + filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0777)
 	if err != nil {
 		log.Fatal("Failed to open ", filename, " for last segment appending")
 	}
 
+	defer file.Close()
+
 	reverseSlice(lastSegment)
 	file.Write([]byte(strings.Join(lastSegment, "\n")))
+
+	segmentsSinceUpload, ok := d.SegmentsSinceLastUpload[filename]
+	if !ok {
+		d.SegmentsSinceLastUpload[filename] = 1
+	}else{
+		d.SegmentsSinceLastUpload[filename] = segmentsSinceUpload + 1
+	}
+
+	if segmentsSinceUpload + 1 >= DVR_UPLOAD_SEGMENT_WINDOW {
+		file.Seek(0, io.SeekStart)
+		listData, err := io.ReadAll(file) 
+		if err != nil {
+			fmt.Printf("Failed to open file %s for reading (dvr list uploading): %s", filename, err)
+			return
+		}
+
+	 	d.uploadList(filename, listData)
+		d.SegmentsSinceLastUpload[filename] = 0
+	}
 }
+
+func (d *DVRGenerator) uploadList(filename string, data []byte){
+	// Append the endlist statement so you can actually play the DVR
+	endlist := []byte("\n#ENDLIST")
+	data = append(data, endlist...)	
+
+	err := d.Uploader.UploadFile(bytes.NewReader(data), fmt.Sprintf("%s/%s", d.MediaId, filename))
+	if err != nil {
+		fmt.Printf("error while uploading dvr list: %s \n", err)
+	}
+}
+
 
 func (d *DVRGenerator) generateAndUploadMasterlist(){
     baseUrl := os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+d.MediaId+"/"
@@ -102,7 +136,10 @@ func (d *DVRGenerator) generateAndUploadMasterlist(){
         masterlistContent = append(masterlistContent, fmt.Sprintf("%sdvr-%dp.m3u8", baseUrl, config.Renditions[i].Height))
     }
 
-	d.Uploader.UploadFile(bytes.NewReader([]byte(strings.Join(masterlistContent, "\n"))), fmt.Sprintf("%s/dvr-master.m3u8", d.MediaId))
+	err := d.Uploader.UploadFile(bytes.NewReader([]byte(strings.Join(masterlistContent, "\n"))), fmt.Sprintf("%s/dvr-master.m3u8", d.MediaId))
+	if err != nil {
+		fmt.Printf("error while uploading dvr list: %s \n", err)
+	}
 }
 
 func (d *DVRGenerator) WriteDVRPlaylist(mediaPath string, filename string, masterReader io.Reader) {
@@ -113,11 +150,11 @@ func (d *DVRGenerator) WriteDVRPlaylist(mediaPath string, filename string, maste
 
 	_, err := os.Stat(mediaPath + "/dvr/" + "dvr-" + filename)
 	if os.IsNotExist(err) {
-		d.createDVRPlaylist(mediaPath,"dvr-" + filename, masterReader)
+		d.createDVRPlaylist(mediaPath, "dvr-" + filename, masterReader)
 		return
 	}
 
-	d.appendLastSegment(mediaPath, filename, masterReader)
+	d.appendLastSegment(mediaPath, "dvr-" + filename, masterReader)
 }
 
 func NewDVRGenerator(videoHeight int, mediaId string, uploader *FileUploader) *DVRGenerator{
@@ -126,5 +163,6 @@ func NewDVRGenerator(videoHeight int, mediaId string, uploader *FileUploader) *D
 		VideoHeight: videoHeight,
 		MediaId: mediaId,
 		Uploader: uploader,
+		SegmentsSinceLastUpload: make(map[string]int),
 	}
 }
