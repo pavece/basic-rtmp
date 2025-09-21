@@ -117,7 +117,7 @@ func (d *DVRGenerator) uploadList(filename string, data []byte){
 
 
 func (d *DVRGenerator) generateAndUploadMasterlist(){
-    baseUrl := os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+d.MediaId+"/"
+    baseUrl := os.Getenv("OBJECT_STORE_PUBLIC_PATH")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+d.MediaId+"/"
 
     lastRenditionIndex := 0;
     for i, rendition := range config.Renditions {

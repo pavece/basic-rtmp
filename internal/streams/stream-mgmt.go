@@ -54,8 +54,8 @@ func RemoveStream(stream StreamProps){
 func postStreamCleanup(stream StreamProps){
 	time.Sleep(4 * time.Second)
 
-	_, err := os.Stat("./media/" + stream.MediaId)
+	_, err := os.Stat(os.Getenv("LOCAL_MEDIA_DIR") + "/" + stream.MediaId)
 	if err == nil {
-		os.RemoveAll("./media/" + stream.MediaId)
+		os.RemoveAll(os.Getenv("LOCAL_MEDIA_DIR") + "/" + stream.MediaId)
 	}
 }

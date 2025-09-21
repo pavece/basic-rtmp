@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -17,7 +18,7 @@ type FileWatcher struct {
 }
 
 func (w *FileWatcher) InitFileWatcher(streamMediaID string, videoHeight int) {
-    mediaDir := "./media/" + streamMediaID
+    mediaDir := os.Getenv("LOCAL_MEDIA_DIR") + "/" + streamMediaID
 
     watcher, err := fsnotify.NewWatcher()
     w.watcher = watcher
@@ -58,8 +59,8 @@ func (w *FileWatcher) InitFileWatcher(streamMediaID string, videoHeight int) {
 
 func (w *FileWatcher) fileChangeHandler(filePath string, streamMediaID string){
     time.Sleep(1 * time.Second)
-    splitFileName := strings.Split(filePath, "\\")
-    destName := streamMediaID + "/" +splitFileName[len(splitFileName) - 1]
+    filename := filepath.Base(filePath)
+    destName := streamMediaID + "/" + filename
 
     fileReader, err := os.Open(filePath)                        
     if err != nil {
@@ -77,6 +78,6 @@ func (w *FileWatcher) fileChangeHandler(filePath string, streamMediaID string){
 
     if strings.HasSuffix(filePath, ".m3u8") {
         fileReader.Seek(0, io.SeekStart)
-        // w.dvrGenerator.WriteDVRPlaylist("./media/" + streamMediaID, splitFileName[len(splitFileName) - 1], fileReader)
+        w.dvrGenerator.WriteDVRPlaylist(os.Getenv("LOCAL_MEDIA_DIR") + "/" + streamMediaID, filename, fileReader)
     }
 }

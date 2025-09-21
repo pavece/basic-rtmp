@@ -23,12 +23,7 @@ type Transcoder struct {
 
 
 func (t *Transcoder) createMediaFolder(){
-    _, err := os.Stat("./media")
-    if os.IsNotExist(err) {
-        os.Mkdir("./media", 0777)
-    }
-
-    err = os.Mkdir("./media/" + t.mediaId, 0777);
+    err := os.MkdirAll(os.Getenv("LOCAL_MEDIA_DIR") + "/" + t.mediaId, 0777);
     if err != nil {
         log.Fatal("Failed to create media folder")
     }
@@ -81,7 +76,7 @@ func (t *Transcoder) setupRenditionFilters() ([]string, string) {
 
 func (t *Transcoder) generateMasterList(){
     height := t.mediaMetadata["height"]
-    baseUrl := os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+t.mediaId+"/"
+    baseUrl := os.Getenv("OBJECT_STORE_PUBLIC_PATH")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+t.mediaId+"/"
 
     lastRenditionIndex := 0;
     for i, rendition := range config.Renditions {
@@ -100,11 +95,11 @@ func (t *Transcoder) generateMasterList(){
         masterlistContent = append(masterlistContent, fmt.Sprintf("%s%dp.m3u8", baseUrl, config.Renditions[i].Height))
     }
 
-    os.WriteFile("./media/"+t.mediaId+"/master.m3u8", []byte(strings.Join(masterlistContent, "\n")), 0777)
+    os.WriteFile(os.Getenv("LOCAL_MEDIA_DIR") + "/" + t.mediaId + "/master.m3u8", []byte(strings.Join(masterlistContent, "\n")), 0777)
 }
 
 func printMasterURL(mediaId string){
-    s3Endpoint := os.Getenv("S3_ENDPOINT")
+    s3Endpoint := os.Getenv("OBJECT_STORE_PUBLIC_PATH")
     bucketName := os.Getenv("CDN_BUCKET_NAME")
     masterUrl := "Masterlist URL: " + s3Endpoint + "/" + bucketName + "/" + mediaId + "/master.m3u8"
 
@@ -128,7 +123,7 @@ func (t *Transcoder) SetupTranscoder(mediaMetadata map[string]int, mediaId strin
     printMasterURL(mediaId)
 
     ffmpegRenditionOptions, namingStreamMap := t.setupRenditionFilters()
-    baseUrl := os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+t.mediaId+"/"
+    baseUrl := os.Getenv("OBJECT_STORE_PUBLIC_PATH")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+t.mediaId+"/"
 
     args := []string{
         "-re",
@@ -140,9 +135,9 @@ func (t *Transcoder) SetupTranscoder(mediaMetadata map[string]int, mediaId strin
         "-hls_list_size", "4",
         "-hls_flags", "append_list+delete_segments+independent_segments",
         "-hls_base_url", baseUrl,
-        "-hls_segment_filename", "./media/"+mediaId+"/%v-segment-%d.ts",
+        "-hls_segment_filename", os.Getenv("LOCAL_MEDIA_DIR") + "/" + mediaId + "/%v-segment-%d.ts",
         "-var_stream_map", namingStreamMap,
-        "./media/"+mediaId+"/%v.m3u8",
+        os.Getenv("LOCAL_MEDIA_DIR") + "/" + mediaId + "/%v.m3u8",
     )
 
     ffmpegCommand := exec.Command("ffmpeg", args...)
