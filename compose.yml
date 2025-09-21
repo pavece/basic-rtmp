@@ -11,6 +11,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - 1935:1935
+      - 8080:8080
     # volumes:
     #   - ./media:/media
     environment:
@@ -21,6 +22,8 @@ services:
       - CDN_BUCKET_NAME=cdn
       - LOCAL_MEDIA_DIR=/test/media # No trailing slash
       - OBJECT_STORE_PUBLIC_PATH=http://localhost:9000 # Used for HLS lists
+      - PROMETHEUS_PORT=8080 # (OPTIONAL) Port for prometheus metrics
+
     networks:
       - backend
 

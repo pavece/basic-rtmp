@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/pavece/simple-rtmp/internal/instrumentation"
 	"github.com/pavece/simple-rtmp/internal/rtmp"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -23,6 +26,8 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+
+	go servePrometheus()
 
 	fmt.Println("Basic RTMP server started")
 
@@ -48,6 +53,18 @@ func handleConnection(connection net.Conn){
 			break;
 		}
 	}
+}
+
+func servePrometheus(){
+	port := os.Getenv("PROMETHEUS_PORT")
+	if port == "" {
+		return
+	}
+
+	fmt.Printf("Serving prometheus metrics on port %s\n", port)
+
+	http.Handle("/metrics", promhttp.HandlerFor(instrumentation.Registry, promhttp.HandlerOpts{}))
+	http.ListenAndServe(":"+port, nil)
 }
 
 func validateEnv() error {

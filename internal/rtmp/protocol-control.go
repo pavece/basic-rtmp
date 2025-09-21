@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"github.com/pavece/simple-rtmp/internal/flv"
+	"github.com/pavece/simple-rtmp/internal/instrumentation"
 	"github.com/yutopp/go-amf0"
 )
 
@@ -55,10 +56,13 @@ func windowAckSize(chunk Chunk, protocolStatus *ProtocolStatus, connection net.C
 
 func getAudio(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 	protocolStatus.flvWriter.AddChunk(flv.MediaChunk{Type: 8, Timestamp: chunk.Header.Timestamp - protocolStatus.baseTimestamp, Payload: chunk.Data})    
+	instrumentation.AudioIngress.Add(float64(len(chunk.Data)))
 }
 
 func getVideo(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 	protocolStatus.flvWriter.AddChunk(flv.MediaChunk{Type: 9, Timestamp: chunk.Header.Timestamp - protocolStatus.baseTimestamp, Payload: chunk.Data})
+	instrumentation.VideoIngress.Add(float64(len(chunk.Data)))
+	
 }
 
 func getMetadata(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {

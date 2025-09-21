@@ -14,5 +14,6 @@ RUN echo "* soft pipe 8192" >> /etc/security/limits.conf && \
     echo "* hard pipe 8192" >> /etc/security/limits.conf
 
 EXPOSE 1935
+EXPOSE 8080
 CMD ["sh", "-c", "ulimit -p 8192 && /app/rtmp-hls"]
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/pavece/simple-rtmp/internal/instrumentation"
 )
 
 /*
@@ -12,6 +13,7 @@ import (
 
 //Use this to mark streams as completed or run custom logic related to stream ends
 func OnStramEnd(streamId int, mediaId string){
+	instrumentation.ActiveStreams.Dec()
 	fmt.Printf("Stream with id %d and media id %s has ended \n", streamId, mediaId)
 }
 
@@ -19,6 +21,7 @@ func OnStramEnd(streamId int, mediaId string){
 
 //Create your own validation logic
 func ValidateStreamKey(streamKey string) error{
+	instrumentation.ActiveStreams.Inc()
 	return nil
 }
 
