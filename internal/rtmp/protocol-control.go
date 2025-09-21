@@ -73,13 +73,13 @@ func getMetadata(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Con
 	decoder.Decode(&metadata)
 	protocolStatus.mediaMetadata = metadata
 
-	_, ffmpegPipe, err := protocolStatus.transcoder.SetupTranscoder(protocolStatus.mediaMetadata, protocolStatus.streamProps.MediaId) 
+	_, ffmpegBuffer, ffmpegPipe, err := protocolStatus.transcoder.SetupTranscoder(protocolStatus.mediaMetadata, protocolStatus.streamProps.MediaId) 
 	if err != nil {
 		protocolStatus.Socket.Close()
 		return
 	}
 	
-	protocolStatus.flvWriter = flv.NewFLVWriter(ffmpegPipe, MEDIA_BUFFER_SIZE_MS) 
+	protocolStatus.flvWriter = flv.NewFLVWriter(ffmpegBuffer, MEDIA_BUFFER_SIZE_MS) 
 	protocolStatus.ffmpegPipe = ffmpegPipe
 }
 

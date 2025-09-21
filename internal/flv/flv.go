@@ -1,9 +1,9 @@
 package flv
 
 import (
+	"bufio"
 	"encoding/binary"
 	"fmt"
-	"io"
 	"sort"
 )
 
@@ -19,14 +19,14 @@ type MediaChunk struct {
 }
 
 type FLVWriter struct {
-	w              io.Writer
+	w              *bufio.Writer
 	buffer         []MediaChunk
 	bufferTime     uint32
 	lastAudioChunk MediaChunk
 	lastVideoChunk MediaChunk
 }
 
-func NewFLVWriter(w io.Writer, bufferTime uint32) *FLVWriter {
+func NewFLVWriter(w * bufio.Writer, bufferTime uint32) *FLVWriter {
 	writer := &FLVWriter{
 		w: w,
 		bufferTime: bufferTime,
@@ -41,7 +41,13 @@ func (f *FLVWriter) WriteHeader() error {
 		return err
 	}
 	
-	return binary.Write(f.w, binary.BigEndian, uint32(0))
+	var tmp [4]byte
+    binary.BigEndian.PutUint32(tmp[:], 0)
+    if _, err := f.w.Write(tmp[:]); err != nil {
+        return err
+    }
+
+	return f.w.Flush()
 }
 
 func (f *FLVWriter) AddChunk(chunk MediaChunk) error {
@@ -161,7 +167,15 @@ func (f *FLVWriter) writeFLVTag(tagType byte, dts uint32, payload []byte) error 
 	}
 
 	prevSize := uint32(11 + len(payload))
-	return binary.Write(f.w, binary.BigEndian, prevSize)
+
+	var tmp [4]byte
+	binary.BigEndian.PutUint32(tmp[:], prevSize)
+
+	if _, err := f.w.Write(tmp[:]); err != nil {
+		return err
+	}
+
+	return f.w.Flush()
 }
 
 func (f *FLVWriter) Close() error {	

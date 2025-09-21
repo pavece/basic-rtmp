@@ -1,6 +1,7 @@
 package transcoding
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -113,14 +114,14 @@ func printMasterURL(mediaId string){
 }
 
 
-func (t *Transcoder) SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, io.WriteCloser, error) {
+func (t *Transcoder) SetupTranscoder(mediaMetadata map[string]int, mediaId string) (*exec.Cmd, *bufio.Writer, io.WriteCloser, error) {
     t.mediaMetadata = mediaMetadata
     t.mediaId = mediaId
 
     err := t.validateMediaMetadata()
     if err != nil {
         log.Println(err)
-        return nil, nil, err
+        return nil, nil, nil, err
     }
 
     t.createMediaFolder()
@@ -130,6 +131,7 @@ func (t *Transcoder) SetupTranscoder(mediaMetadata map[string]int, mediaId strin
     baseUrl := os.Getenv("S3_ENDPOINT")+"/"+os.Getenv("CDN_BUCKET_NAME")+"/"+t.mediaId+"/"
 
     args := []string{
+        "-re",
         "-i", "pipe:0",
     }
     args = append(args, ffmpegRenditionOptions...)
@@ -147,16 +149,18 @@ func (t *Transcoder) SetupTranscoder(mediaMetadata map[string]int, mediaId strin
     ffmpegCommand.Stderr = os.Stderr
     ffmpegPipe, err := ffmpegCommand.StdinPipe()
     if err != nil {
-        return nil, nil, err
+        return nil, nil, nil, err
     }
+
+    ffmpegInBuffer := bufio.NewWriter(ffmpegPipe)
 
     err = ffmpegCommand.Start()
     if err != nil {
-        return nil, nil, err
+        return nil, nil, nil, err
     }
 
 	t.mediaUploader.InitFileWatcher(mediaId, t.mediaMetadata["height"])
     t.generateMasterList()
 
-    return ffmpegCommand, ffmpegPipe, nil
+    return ffmpegCommand, ffmpegInBuffer, ffmpegPipe, nil
 }

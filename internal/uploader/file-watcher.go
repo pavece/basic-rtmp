@@ -77,6 +77,6 @@ func (w *FileWatcher) fileChangeHandler(filePath string, streamMediaID string){
 
     if strings.HasSuffix(filePath, ".m3u8") {
         fileReader.Seek(0, io.SeekStart)
-        w.dvrGenerator.WriteDVRPlaylist("./media/" + streamMediaID, splitFileName[len(splitFileName) - 1], fileReader)
+        // w.dvrGenerator.WriteDVRPlaylist("./media/" + streamMediaID, splitFileName[len(splitFileName) - 1], fileReader)
     }
 }

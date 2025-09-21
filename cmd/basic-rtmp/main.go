@@ -2,17 +2,20 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
+	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/pavece/simple-rtmp/internal/rtmp"
 )
 
 func main() {
-	err := godotenv.Load()
+	godotenv.Load()
+
+	err := validateEnv()
 	if err != nil {
-		fmt.Println("Error while loading .env file: ", err)
-		return
+		log.Fatal(err)
 	}
 
 	nl, err := net.Listen("tcp", ":1935")
@@ -45,4 +48,12 @@ func handleConnection(connection net.Conn){
 			break;
 		}
 	}
+}
+
+func validateEnv() error {
+	if os.Getenv("LOCAL_MEDIA_DIR") == "" {
+		return fmt.Errorf("local media dir not specified")
+	}
+
+	return nil
 }
