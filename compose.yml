@@ -23,7 +23,6 @@ services:
       - LOCAL_MEDIA_DIR=/test/media # No trailing slash
       - OBJECT_STORE_PUBLIC_PATH=http://localhost:9000 # Used for HLS lists
       - PROMETHEUS_PORT=8080 # (OPTIONAL) Port for prometheus metrics
-
     networks:
       - backend
 
@@ -40,3 +39,27 @@ services:
       - minio-data:/data
     networks:
       - backend
+
+  # Observability
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: prometheus
+  #   volumes:
+  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #   ports:
+  #     - "9090:9090"
+  #   networks:
+  #     - backend
+
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: grafana
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #   depends_on:
+  #     - prometheus
+  #   networks:
+  #     - backend

@@ -15,7 +15,8 @@ This project features a partial RTMP implementation from the [spec](https://rtmp
 - Automatic live HLS (segments and list) uploading to object storage (S3/MinIO)
 - Automatic DVR (VOD playback) playlist generation and uploading
 - Customizable callbacks for stream key validation and stream lifecycle management
-- Multi streamer setups
+- Multiple streamers allowed
+- Prometheus metrics + grafana dashboard for ingress & egress rate monitoring
 
 ## Demos
 
@@ -47,6 +48,14 @@ docker compose up -d
 ```
 
 If using minio remember to configure the CDN bucket for **anonymous readonly access**.
+
+## Observability
+
+This service comes with a basic prometheus instrumentation setup for controling ingress rates and active streams.
+
+To enable prometheus metrics provide a PROMETHEUS_PORT in env variables and unncomment the observability section in the compose file. You can also import the custom grafana dashboard provided at project's root *RTMP2HLS-grafana.json*
+
+![Grafana dashboard](https://static.pavece.com/public-files/rtmp2hls/instrumentation.webp)
 
 ## Sources
 
