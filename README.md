@@ -7,7 +7,6 @@ This project features a partial RTMP implementation from the [spec](https://rtmp
 > [!WARNING]  
 > This is a toy learning project. It is unfinished, under active development and not intended for production use (much better alternatives out there). Use at your own risk.
 
-
 ## Features
 
 - Custom partial RTMP implementation
@@ -18,6 +17,23 @@ This project features a partial RTMP implementation from the [spec](https://rtmp
 - Customizable callbacks for stream key validation and stream lifecycle management
 - Multi streamer setups
 
+## Demos
+
+This video shows how you can stream directly from OBS to this server and perform live playback using HLS in VLC (or any other HLS player). This demo shows a bit of delay from OBS to the player (around 10s) remember this is a WIP.
+
+[![OBS Demo](https://static.pavece.com/public-files/rtmp2hls/quick-demo.jpg)](https://static.pavece.com/public-files/rtmp2hls/quick-demo.mp4)
+
+### DVR demos
+
+These videos where streamed from OBS to this server. These clips are extracted from the automatically generated DVR HLS list.
+
+#### Audio / Video syncronization
+
+[![Audio video sync demo](https://static.pavece.com/public-files/rtmp2hls/sync.jpg)](https://static.pavece.com/public-files/rtmp2hls/sync.mp4)
+
+#### Big buck bunny fragment
+
+[![Big buck bunny demo](https://static.pavece.com/public-files/rtmp2hls/big-buck-bunny.jpg)](https://static.pavece.com/public-files/rtmp2hls/big-buck-bunny.mp4)
 
 ## Sources
 
