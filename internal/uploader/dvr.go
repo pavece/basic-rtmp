@@ -106,7 +106,7 @@ func (d *DVRGenerator) appendLastSegment(mediaPath string, filename string, mast
 
 func (d *DVRGenerator) uploadList(filename string, data []byte){
 	// Append the endlist statement so you can actually play the DVR
-	endlist := []byte("\n#ENDLIST")
+	endlist := []byte("\n#EXT-X-ENDLIST")
 	data = append(data, endlist...)	
 
 	err := d.Uploader.UploadFile(bytes.NewReader(data), fmt.Sprintf("%s/%s", d.MediaId, filename))
