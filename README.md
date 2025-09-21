@@ -19,21 +19,34 @@ This project features a partial RTMP implementation from the [spec](https://rtmp
 
 ## Demos
 
-This video shows how you can stream directly from OBS to this server and perform live playback using HLS in VLC (or any other HLS player). This demo shows a bit of delay from OBS to the player (around 10s) remember this is a WIP.
+This video shows how you can stream directly from OBS to this server and perform live playback using HLS in VLC (or any other HLS player).
 
 [![OBS Demo](https://static.pavece.com/public-files/rtmp2hls/quick-demo.jpg)](https://static.pavece.com/public-files/rtmp2hls/quick-demo.mp4)
+
+⚠️ Note: This is a work-in-progress demo. Expect ~10s latency between OBS and HLS playback.
 
 ### DVR demos
 
 These videos where streamed from OBS to this server. These clips are extracted from the automatically generated DVR HLS list.
 
-#### Audio / Video syncronization
+#### Audio / Video synchronization
 
 [![Audio video sync demo](https://static.pavece.com/public-files/rtmp2hls/sync.jpg)](https://static.pavece.com/public-files/rtmp2hls/sync.mp4)
 
 #### Big buck bunny fragment
 
 [![Big buck bunny demo](https://static.pavece.com/public-files/rtmp2hls/big-buck-bunny.jpg)](https://static.pavece.com/public-files/rtmp2hls/big-buck-bunny.mp4)
+
+## Running with Docker
+
+You can clone the repo and launch the docker compose to build the server's image and launch additional services.
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+If using minio remember to configure the CDN bucket for **anonymous readonly access**.
 
 ## Sources
 
