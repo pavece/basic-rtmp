@@ -49,25 +49,31 @@ func (t *Transcoder) setupRenditionFilters() ([]string, string) {
         }
     }
 
-    options := make([]string, 0)
+    options := []string{}
 
     //General complex filter definition line
-    options = append(options, "-filter_complex")
     filtersDefinition := ""
     namingStreamMap := ""
 
     for i := 0; i<=lastRenditionIndex; i++{
-        filtersDefinition += fmt.Sprintf("[0:v]scale=%d:%d[v%d];", config.Renditions[i].Width, config.Renditions[i].Height, i)
+        terminator := ";"
+        if i == lastRenditionIndex {
+            terminator = ""
+        }
+
+        filtersDefinition += fmt.Sprintf("[0:v]scale=%d:%d[v%d]%s", config.Renditions[i].Width, config.Renditions[i].Height, i, terminator)
         namingStreamMap += fmt.Sprintf("v:%d,a:%d,name:%dp ", i, i, config.Renditions[i].Height)
     }
-    options = append(options, filtersDefinition)
+    
+    if filtersDefinition != "" {
+        options = append(options, "-filter_complex", filtersDefinition)
+    }
     
     //Definition for each filter
     for i := 0; i<=lastRenditionIndex; i++{
         splitParams := strings.Split(fmt.Sprintf("-map [v%d] -map 0:a:0 -c:v:%d libx264 -b:v:%d %dk -c:a:%d aac", i, i, i, config.Renditions[i].Bitrate, i), " ")
         options = append(options, splitParams...)
     }
-    
     
     return options, namingStreamMap
 }

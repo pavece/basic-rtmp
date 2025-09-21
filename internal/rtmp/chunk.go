@@ -2,7 +2,6 @@ package rtmp
 
 import (
 	"fmt"
-	"log"
 	"net"
 )
 
@@ -13,27 +12,32 @@ func ReadChunkData(connection net.Conn, protocolStatus *ProtocolStatus) error {
 		return err
 	}
 	
-
 	messageHeaderData := ParseMessageHeader(connection, basicHeaderData.Fmt)
-	type0header, ok := messageHeaderData.(Type0HeaderData)
 
-	if ok {
-		//First chunk of chunk stream
-		protocolStatus.chunkStreams[basicHeaderData.ChunkStreamId] = Chunk{Header: type0header, BasicHeader: basicHeaderData}
-	}
-
+	if basicHeaderData.Fmt == 0 {
+        type0header := messageHeaderData.(Type0HeaderData)
+        protocolStatus.chunkStreams[basicHeaderData.ChunkStreamId] = Chunk{
+            Header: type0header, 
+            BasicHeader: basicHeaderData,
+        }
+    }
+    
 	currentChunkStream, ok := protocolStatus.chunkStreams[basicHeaderData.ChunkStreamId]
+    if !ok {
+        return fmt.Errorf("chunk stream %d not found - missing Type 0 header", basicHeaderData.ChunkStreamId)
+    }
 
-	if !ok {
-		log.Fatal("Chunk stream not found")
-	}
-
-	if basicHeaderData.Fmt == 1 {
-		type1header := messageHeaderData.(Type1HeaderData)
-		currentChunkStream.Header.Timestamp += type1header.TimestampDelta
-		currentChunkStream.Header.MessageTypeId = type1header.MessageTypeId
-		currentChunkStream.Header.MessageLength = type1header.MessageLength
-	}
+   switch basicHeaderData.Fmt {
+    case 1:
+        type1header := messageHeaderData.(Type1HeaderData)
+        currentChunkStream.Header.Timestamp += type1header.TimestampDelta
+        currentChunkStream.Header.MessageTypeId = type1header.MessageTypeId
+        currentChunkStream.Header.MessageLength = type1header.MessageLength
+    case 2:
+        type2header := messageHeaderData.(Type2HeaderData)
+        currentChunkStream.Header.Timestamp += type2header.TimestampDelta
+    case 3:
+    }
 
 	currentChunkStream.BasicHeader = basicHeaderData
 
