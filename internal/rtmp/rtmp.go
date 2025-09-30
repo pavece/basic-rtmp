@@ -10,7 +10,7 @@ import (
 )
 
 
-type ProtocolStatus struct {
+type Rtmp struct {
 	chunkSize       uint32
 	baseTimestamp   uint32
 	clientWindowAck uint32
@@ -31,6 +31,6 @@ type Chunk struct {
 	Data        []byte
 }
 
-func NewProtocolStatus() *ProtocolStatus{
-	return &ProtocolStatus{chunkSize: 128, baseTimestamp: 0, clientWindowAck: 0, serverWindowAck: 0, chunkStreams: make(map[int]Chunk), flvWriter: nil}
+func New(connection net.Conn) *Rtmp{
+	return &Rtmp{chunkSize: 128, baseTimestamp: 0, clientWindowAck: 0, serverWindowAck: 0, chunkStreams: make(map[int]Chunk), flvWriter: nil, Socket: connection}
 }

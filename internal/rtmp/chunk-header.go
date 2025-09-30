@@ -31,9 +31,9 @@ type Type2HeaderData struct {
 }
 
 
-func ParseBasicHeader(connection net.Conn) (BasicHeaderData, error) {
+func (ps *Rtmp) parseBasicHeader() (BasicHeaderData, error) {
 	byte0 := make([]byte, 1)
-	if _, err := io.ReadFull(connection, byte0); err != nil{
+	if _, err := io.ReadFull(ps.Socket, byte0); err != nil{
 		fmt.Println("Failed to read first byte from chunk stream basic header")
 		return BasicHeaderData{}, err
 	}
@@ -45,12 +45,12 @@ func ParseBasicHeader(connection net.Conn) (BasicHeaderData, error) {
 
 	if csIdValue == 0 {
 		byte1 := make([]byte, 1)
-		io.ReadFull(connection, byte1)
+		io.ReadFull(ps.Socket, byte1)
 
 		csIdValue = int(byte1[0]) + 64
 	}else if csIdValue == 1 {
 		byte1and2 := make([]byte, 2)
-		io.ReadFull(connection, byte1and2)
+		io.ReadFull(ps.Socket, byte1and2)
 
 		csIdValue = int(byte1and2[1]) * 256 + int(byte1and2[0]) + 64
 	}
@@ -60,7 +60,7 @@ func ParseBasicHeader(connection net.Conn) (BasicHeaderData, error) {
 	return headerData, nil
 }
 
-func ParseMessageHeader(connection net.Conn, headerType int) interface{} {
+func (ps *Rtmp) parseMessageHeader(headerType int) interface{} {
 	messageHeaderTypeLength := map[int]int{
 		0: 11,
 		1: 7,
@@ -69,22 +69,22 @@ func ParseMessageHeader(connection net.Conn, headerType int) interface{} {
 	}
 
 	messageHeader := make([]byte, messageHeaderTypeLength[headerType])
-	if _, err := io.ReadFull(connection, messageHeader); err != nil {
+	if _, err := io.ReadFull(ps.Socket, messageHeader); err != nil {
 		log.Fatal("Failed to read message header", err)
 	}
 
 	switch headerType {
 	case 0:
 		headerData := parseType0Header(messageHeader)
-		headerData.Timestamp = parseExtendedTimestamp(connection, headerData.Timestamp)
+		headerData.Timestamp = parseExtendedTimestamp(ps.Socket, headerData.Timestamp)
 		return headerData
 	case 1:
 		headerData := parseType1Header(messageHeader)
-		headerData.TimestampDelta = parseExtendedTimestamp(connection, headerData.TimestampDelta)
+		headerData.TimestampDelta = parseExtendedTimestamp(ps.Socket, headerData.TimestampDelta)
 		return headerData
 	case 2:
 		headerData := parseType2Header(messageHeader)
-		headerData.TimestampDelta = parseExtendedTimestamp(connection, headerData.TimestampDelta)
+		headerData.TimestampDelta = parseExtendedTimestamp(ps.Socket, headerData.TimestampDelta)
 		return headerData
 	case 3:
 		break

@@ -103,8 +103,8 @@ func prepend(data, prefix []byte) []byte {
 
 
 // Extended timestamp not supported in current version
-func buildMessageChunks(body []byte, chunkStreamId uint32, messageTypeId uint8, messageStreamId uint32, protocolStatus *ProtocolStatus)[][]byte {
-	chunkSize := int(protocolStatus.chunkSize)
+func (ps *Rtmp) buildMessageChunks(body []byte, chunkStreamId uint32, messageTypeId uint8, messageStreamId uint32)[][]byte {
+	chunkSize := int(ps.chunkSize)
 	bodyLen := len(body)
 
 	bodyParts := (bodyLen + chunkSize - 1) / chunkSize
@@ -112,7 +112,7 @@ func buildMessageChunks(body []byte, chunkStreamId uint32, messageTypeId uint8, 
 
 	firstChunkHeader := make([]byte, 0)
 	firstChunkHeader = append(firstChunkHeader, buildBasicHeader(0, chunkStreamId)...)
-	firstChunkHeader = append(firstChunkHeader, buildType0MessageHeader(protocolStatus.baseTimestamp, uint32(bodyLen), messageTypeId, messageStreamId)...)
+	firstChunkHeader = append(firstChunkHeader, buildType0MessageHeader(ps.baseTimestamp, uint32(bodyLen), messageTypeId, messageStreamId)...)
 
 	subsequentChunkHeader := make([]byte, 0)
 	subsequentChunkHeader = append(subsequentChunkHeader, buildBasicHeader(4, chunkStreamId)...)
