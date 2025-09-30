@@ -3,44 +3,43 @@ package rtmp
 import (
 	"bytes"
 	"encoding/binary"
-	"net"
 
 	"github.com/yutopp/go-amf0"
 )
 
-func sendWindowAckSize(connection net.Conn, window uint32, protocolStatus *ProtocolStatus) {
+func (ps *Rtmp) sendWindowAckSize(window uint32) {
 	var body []byte
 	body = binary.BigEndian.AppendUint32(body, window)
-	chunks := buildMessageChunks(body, 2, 5, 0, protocolStatus)
+	chunks := ps.buildMessageChunks(body, 2, 5, 0)
 
 	for _, chunk := range(chunks) {
-		connection.Write(chunk)
+		ps.Socket.Write(chunk)
 	}
 }
 
-func sendPeerBandwidth(connection net.Conn, window uint32, limitType uint8, protocolStatus *ProtocolStatus) {
+func (ps *Rtmp) sendPeerBandwidth(window uint32, limitType uint8) {
 	var body []byte
 	body = binary.BigEndian.AppendUint32(body, window)
 	body = append(body, byte(limitType))
 
-	chunks := buildMessageChunks(body, 2, 6, 0, protocolStatus)
+	chunks := ps.buildMessageChunks(body, 2, 6, 0)
 	for _, chunk := range(chunks) {
-		connection.Write(chunk)
+		ps.Socket.Write(chunk)
 	}
 }
 
-func sendStreamBeginCommand(connection net.Conn, streamId uint32, protocolStatus *ProtocolStatus){
+func (ps *Rtmp) sendStreamBeginCommand(streamId uint32){
 	body := make([]byte, 0, 6)
 	body = binary.BigEndian.AppendUint16(body, 0) 
 	body = binary.BigEndian.AppendUint32(body, streamId)
 
-	chunks := buildMessageChunks(body, 2, 4, 0, protocolStatus)
+	chunks := ps.buildMessageChunks(body, 2, 4, 0)
 	for _, chunk := range(chunks) {
-		connection.Write(chunk)
+		ps.Socket.Write(chunk)
 	}
 }
 
-func sendConnectionResultCommand(connection net.Conn, transactionId int, protocolStatus *ProtocolStatus){
+func (ps *Rtmp) sendConnectionResultCommand(transactionId int){
 	
 	var buf bytes.Buffer
     encoder := amf0.NewEncoder(&buf)
@@ -56,13 +55,13 @@ func sendConnectionResultCommand(connection net.Conn, transactionId int, protoco
     }
 	encoder.Encode(info)
 
-	chunks := buildMessageChunks(buf.Bytes(), 3, 20, 0, protocolStatus)
+	chunks := ps.buildMessageChunks(buf.Bytes(), 3, 20, 0)
 	for _, chunk := range(chunks) {
-		connection.Write(chunk)
+		ps.Socket.Write(chunk)
 	}
 }
 
-func sendCreateStreamResultCommand(connection net.Conn, transactionId int, streamNumber uint32, protocolStatus *ProtocolStatus){
+func (ps *Rtmp) sendCreateStreamResultCommand(transactionId int, streamNumber uint32){
 	var buf bytes.Buffer
     encoder := amf0.NewEncoder(&buf)
 
@@ -71,13 +70,13 @@ func sendCreateStreamResultCommand(connection net.Conn, transactionId int, strea
 	encoder.Encode(nil)
 	encoder.Encode(streamNumber)
 
-	chunks := buildMessageChunks(buf.Bytes(), 3, 20, 0, protocolStatus)
+	chunks := ps.buildMessageChunks(buf.Bytes(), 3, 20, 0)
 	for _, chunk := range(chunks) {
-		connection.Write(chunk)
+		ps.Socket.Write(chunk)
 	}
 }
 
-func sendPublishStart(connection net.Conn, streamId uint32, protocolStatus *ProtocolStatus) {
+func (ps *Rtmp) sendPublishStart(streamId uint32) {
 	var buf bytes.Buffer
 	encoder := amf0.NewEncoder(&buf)
 
@@ -92,8 +91,8 @@ func sendPublishStart(connection net.Conn, streamId uint32, protocolStatus *Prot
     }
 	encoder.Encode(info)
 
-    chunks := buildMessageChunks(buf.Bytes(), 5, 20, streamId, protocolStatus) 
+    chunks := ps.buildMessageChunks(buf.Bytes(), 5, 20, streamId) 
     for _, chunk := range chunks {
-        connection.Write(chunk)
+        ps.Socket.Write(chunk)
     }
 }

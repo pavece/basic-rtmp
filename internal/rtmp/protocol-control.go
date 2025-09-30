@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"net"
 
 	"github.com/pavece/simple-rtmp/internal/flv"
 	"github.com/pavece/simple-rtmp/internal/instrumentation"
@@ -14,7 +13,7 @@ import (
 /*
 	Generic protocol message handlers
 */
-var ControlHandlers = map[int]func(Chunk, *ProtocolStatus, net.Conn){
+var ControlHandlers = map[int]func(Chunk, *Rtmp){
 	1: setChunkSize,
 	2: abortMessage,
 	3: ack, 
@@ -27,45 +26,45 @@ var ControlHandlers = map[int]func(Chunk, *ProtocolStatus, net.Conn){
 	20: parseAMF0Command,
 }
 
-func setChunkSize(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
+func setChunkSize(chunk Chunk, protocolStatus *Rtmp) {
 	newSize := binary.BigEndian.Uint32(chunk.Data)
 	protocolStatus.chunkSize = newSize
 	fmt.Println("Updated chunk size to ", newSize)
 }
 
-func abortMessage(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
+func abortMessage(chunk Chunk, protocolStatus *Rtmp) {
 	streamId := binary.BigEndian.Uint32(chunk.Data)
 	delete(protocolStatus.chunkStreams, int(streamId)) //Incorrect
 	fmt.Println("Aborted message stream ", streamId)
 }
 
-func ack(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+func ack(chunk Chunk, protocolStatus *Rtmp){
 	totalBytes := binary.BigEndian.Uint32(chunk.Data)
 	fmt.Println("Recieved ACK from client, total bytes: ", totalBytes)
 }
 
-func userControl(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+func userControl(chunk Chunk, protocolStatus *Rtmp){
 	fmt.Println("User control message")
 }
 
-func windowAckSize(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+func windowAckSize(chunk Chunk, protocolStatus *Rtmp){
 	window := binary.BigEndian.Uint32(chunk.Data)
 	protocolStatus.clientWindowAck = window
 	fmt.Println("Updated client's ack window to ", window)
 }
 
-func getAudio(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+func getAudio(chunk Chunk, protocolStatus *Rtmp){
 	protocolStatus.flvWriter.AddChunk(flv.MediaChunk{Type: 8, Timestamp: chunk.Header.Timestamp - protocolStatus.baseTimestamp, Payload: chunk.Data})    
 	instrumentation.AudioIngress.Add(float64(len(chunk.Data)))
 }
 
-func getVideo(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+func getVideo(chunk Chunk, protocolStatus *Rtmp){
 	protocolStatus.flvWriter.AddChunk(flv.MediaChunk{Type: 9, Timestamp: chunk.Header.Timestamp - protocolStatus.baseTimestamp, Payload: chunk.Data})
 	instrumentation.VideoIngress.Add(float64(len(chunk.Data)))
 	
 }
 
-func getMetadata(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
+func getMetadata(chunk Chunk, protocolStatus *Rtmp) {
 	reader := bytes.NewReader(chunk.Data)
 	decoder := amf0.NewDecoder(reader)
 
@@ -87,7 +86,7 @@ func getMetadata(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Con
 	protocolStatus.ffmpegPipe = ffmpegPipe
 }
 
-func parseAMF0Command(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn) {
+func parseAMF0Command(chunk Chunk, protocolStatus *Rtmp) {
 	reader := bytes.NewReader(chunk.Data)
 	decoder := amf0.NewDecoder(reader)
 
@@ -102,9 +101,9 @@ func parseAMF0Command(chunk Chunk, protocolStatus *ProtocolStatus, connection ne
 	}
 
 	fmt.Println("Incoming command: ", command)
-	handler(chunk, protocolStatus, connection)
+	handler(chunk, protocolStatus, protocolStatus.Socket)
 }
 
-func notImplemented(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+func notImplemented(chunk Chunk, protocolStatus *Rtmp){
 	fmt.Println("Not implemented")
 }

@@ -5,26 +5,26 @@ networks:
   backend:
 
 services:
-  rtmp2hls:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - 1935:1935
-      - 8080:8080
-    # volumes:
-    #   - ./media:/media
-    environment:
-      - AWS_ACCESS_KEY_ID=minioadmin # Minio username / AWS key ID
-      - AWS_SECRET_ACCESS_KEY=minioadmin123 # Minio password / AWS secret
-      - AWS_REGION=minio # mino / valid AWS region
-      - S3_ENDPOINT=http://minio:9000 # Leave empty if using S3
-      - CDN_BUCKET_NAME=cdn
-      - LOCAL_MEDIA_DIR=/test/media # No trailing slash
-      - OBJECT_STORE_PUBLIC_PATH=http://localhost:9000 # Used for HLS lists
-      - PROMETHEUS_PORT=8080 # (OPTIONAL) Port for prometheus metrics
-    networks:
-      - backend
+  # rtmp2hls:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - 1935:1935
+  #     - 8080:8080
+  #   # volumes:
+  #   #   - ./media:/media
+  #   environment:
+  #     - AWS_ACCESS_KEY_ID=minioadmin # Minio username / AWS key ID
+  #     - AWS_SECRET_ACCESS_KEY=minioadmin123 # Minio password / AWS secret
+  #     - AWS_REGION=minio # mino / valid AWS region
+  #     - S3_ENDPOINT=http://minio:9000 # Leave empty if using S3
+  #     - CDN_BUCKET_NAME=cdn
+  #     - LOCAL_MEDIA_DIR=/test/media # No trailing slash
+  #     - OBJECT_STORE_PUBLIC_PATH=http://localhost:9000 # Used for HLS lists
+  #     - PROMETHEUS_PORT=8080 # (OPTIONAL) Port for prometheus metrics
+  #   networks:
+  #     - backend
 
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z-cpuv1 #This version includes the legacy web console (good for config). Update to latest / use other object store for production

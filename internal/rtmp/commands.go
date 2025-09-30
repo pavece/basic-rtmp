@@ -16,7 +16,7 @@ import (
 const WINDOW_SIZE_BYTE = 8192
 const MEDIA_BUFFER_SIZE_MS = 500
 
-var commandHandlers = map[string]func(Chunk, *ProtocolStatus,  net.Conn){
+var commandHandlers = map[string]func(Chunk, *Rtmp,  net.Conn){
 	"connect": connect,
 	"createStream": createStream,
 	"play": commandNotImplemented,
@@ -25,7 +25,7 @@ var commandHandlers = map[string]func(Chunk, *ProtocolStatus,  net.Conn){
 }
 
 
-func connect(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+func connect(chunk Chunk, protocolStatus *Rtmp, connection net.Conn){
 	reader := bytes.NewReader(chunk.Data)
 	decoder := amf0.NewDecoder(reader)
 	
@@ -37,17 +37,17 @@ func connect(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 
 	protocolStatus.streamProps = streams.CreateNewStream(connectProps["tcUrl"])
 
-	sendWindowAckSize(connection, WINDOW_SIZE_BYTE, protocolStatus)
-	sendPeerBandwidth(connection, WINDOW_SIZE_BYTE, 0, protocolStatus)
-	sendStreamBeginCommand(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)
-	sendConnectionResultCommand(connection, protocolStatus.streamProps.StreamId, protocolStatus)
+	protocolStatus.sendWindowAckSize(WINDOW_SIZE_BYTE)
+	protocolStatus.sendPeerBandwidth(WINDOW_SIZE_BYTE, 0)
+	protocolStatus.sendStreamBeginCommand(uint32(protocolStatus.streamProps.StreamId))
+	protocolStatus.sendConnectionResultCommand(protocolStatus.streamProps.StreamId)
 }
 
-func createStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
-	sendCreateStreamResultCommand(connection, 4, 1, protocolStatus)
+func createStream(chunk Chunk, protocolStatus *Rtmp, connection net.Conn){
+	protocolStatus.sendCreateStreamResultCommand(4, 1)
 }
 
-func publish(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+func publish(chunk Chunk, protocolStatus *Rtmp, connection net.Conn){
 	reader := bytes.NewReader(chunk.Data)
 	decoder := amf0.NewDecoder(reader)
 	
@@ -70,17 +70,17 @@ func publish(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
 	}
 	
 	protocolStatus.streamProps.MediaId = mediaId	
-	sendStreamBeginCommand(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)
-	sendPublishStart(connection, uint32(protocolStatus.streamProps.StreamId), protocolStatus)
+	protocolStatus.sendStreamBeginCommand(uint32(protocolStatus.streamProps.StreamId))
+	protocolStatus.sendPublishStart(uint32(protocolStatus.streamProps.StreamId))
 }
 
-func deleteStream(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+func deleteStream(chunk Chunk, protocolStatus *Rtmp, connection net.Conn){
 	protocolStatus.flvWriter.Close()
 	protocolStatus.ffmpegPipe.Close()
 	streams.RemoveStream(protocolStatus.streamProps)
 	protocolStatus.Socket.Close()
 }
 
-func commandNotImplemented(chunk Chunk, protocolStatus *ProtocolStatus, connection net.Conn){
+func commandNotImplemented(chunk Chunk, protocolStatus *Rtmp, connection net.Conn){
 	fmt.Println("Command not implemented")
 }

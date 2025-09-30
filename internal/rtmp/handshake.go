@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"io"
 	"log"
-	"net"
 )
 
 type HandshakeData struct {
@@ -12,7 +11,7 @@ type HandshakeData struct {
 	InitialTimestamp [4]byte
 }
 
-func Handshake(conn net.Conn) error {
+func (ps *Rtmp) Handshake() error {
     var c0 [1]byte
     var c1 [1536]byte
     var c2 [1536]byte
@@ -20,7 +19,7 @@ func Handshake(conn net.Conn) error {
     var s1 [1536]byte
     var s2 [1536]byte
 
-    if _, err := io.ReadFull(conn, c0[:]); err != nil {
+    if _, err := io.ReadFull(ps.Socket, c0[:]); err != nil {
        log.Fatal(err)
     }
     
@@ -30,23 +29,23 @@ func Handshake(conn net.Conn) error {
     if _, err := io.ReadFull(rand.Reader, s1[8:]); err != nil {
        log.Fatal(err)
     }
-    if _, err := conn.Write(s0[:]); err != nil {
+    if _, err := ps.Socket.Write(s0[:]); err != nil {
        log.Fatal(err)
     }
-    if _, err := conn.Write(s1[:]); err != nil {
+    if _, err := ps.Socket.Write(s1[:]); err != nil {
        log.Fatal(err)
     }
 
-    if _, err := io.ReadFull(conn, c1[:]); err != nil {
+    if _, err := io.ReadFull(ps.Socket, c1[:]); err != nil {
        log.Fatal(err)
     }
 
    copy(s2[:], c1[:])
-    if _, err := conn.Write(s2[:]); err != nil {
+    if _, err := ps.Socket.Write(s2[:]); err != nil {
        log.Fatal(err)
     }
 
-    if _, err := io.ReadFull(conn, c2[:]); err != nil {
+    if _, err := io.ReadFull(ps.Socket, c2[:]); err != nil {
        log.Fatal(err)
     }
 
